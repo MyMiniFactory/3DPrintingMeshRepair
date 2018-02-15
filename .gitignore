@@ -1,0 +1,4 @@
+*.stl
+*.swp
+*.off
+vcglib/
