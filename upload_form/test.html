@@ -1,10 +1,51 @@
+
+<script async type="text/javascript" src="../out/filecheck.js"></script>
 <script type="text/javascript">
+    var global_file_counter = 0;
     function uploaded() {
         console.log("hello");
         var uploadform = document.getElementById("fileuploadform");
-        console.log(uploadform.value);
+        console.log(uploadform.files[0]);
+        var fr = new FileReader();
+
+        fr.onload = function (){
+            // console.log(fr.data);
+            // console.log(fr.result);
+            // console.log("atob", atob(fr.result.split(",")[1]));
+            var stl_name = global_file_counter + ".stl"
+
+            var data = atob(fr.result.split(",")[1]);
+
+            Module['FS_createDataFile'](".", stl_name, data, true, true);
+            var result = Module.ccall("file_check", ["number"], ["string"], [stl_name]);
+            set_color(result, "green");
+
+            global_file_counter += 1
+        };
+
+        fr.onloadstart = function(){set_color(5, "red");};
+
+        fr.readAsDataURL(uploadform.files[0]);
+
+        console.log(fr);
+
     }
+
+    function set_color(number, color) {
+        var res = document.getElementsByClassName("condition");
+        for (var i=0;i<number;i++) {
+            document.getElementById("condition" + i).style.backgroundColor = color;
+        }
+    }
+
 </script>
 
 <input type="file" onChange="uploaded()" id="fileuploadform"/>
 
+<div id="content">
+    <div id="condition0" class="condition">step degenerate</div>
+    <div id="condition1" class="condition">step duplicate faces</div>
+    <div id="condition2" class="condition">is manifold</div>
+    <div id="condition3" class="condition">is consistent normal</div>
+    <div id="condition4" class="condition">is volume bigger 0</div>
+</div>
