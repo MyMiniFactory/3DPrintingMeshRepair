@@ -1,27 +1,33 @@
-#include <vcg/complex/complex.h>
-#include <vcg/complex/algorithms/clean.h>
-#include <wrap/io_trimesh/import_stl.h>
-#include <vcg/complex/algorithms/inertia.h>
-#include <iostream>
-#include <fstream>
+#include <helloworld.hpp>
 
-class MyVertex; class MyFace;
-struct MyUsedTypes : public vcg::UsedTypes<vcg::Use<MyVertex>   ::AsVertexType,
-                            vcg::Use<MyFace>     ::AsFaceType>{};
-class MyVertex  : public vcg::Vertex< MyUsedTypes,
-    vcg::vertex::Coord3f,
-    vcg::vertex::Normal3f,
-    vcg::vertex::Mark,
-    vcg::vertex::BitFlags  >{};
+bool NoDengeratedFaces(MyMesh & mesh) {
+    bool RemoveDegenerateFlag=true;
+    vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
+    return true;
+}
 
-class MyFace    : public vcg::Face< MyUsedTypes,
-    vcg::face::FFAdj,
-    vcg::face::Normal3f,
-    vcg::face::VertexRef,
-    vcg::face::BitFlags > {};
-class MyMesh    : public vcg::tri::TriMesh< std::vector<MyVertex>, std::vector<MyFace> > {};
+bool NoDuplicateFaces(MyMesh & mesh) {
+    bool RemoveDegenerateFlag=true;
+    vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
+    return true;
+}
+
+bool IsWaterTight(MyMesh & mesh) {
+    return vcg::tri::Clean<MyMesh>::IsWaterTight(mesh);
+}
+
+
+bool IsCoherentlyOrientedMesh(MyMesh & mesh) {
+    return vcg::tri::Clean<MyMesh>::IsCoherentlyOrientedMesh(mesh);
+}
+
+bool IsPositiveVolume(MyMesh & mesh) {
+    vcg::tri::Inertia<MyMesh> Ib(mesh);
+    return Ib.Mass() > 0. ;
+}
 
 extern "C" {
+
     void print_file(const std::string filepath) {
         printf("print_file function reading file  %s\n",filepath.c_str());
 
@@ -50,8 +56,10 @@ extern "C" {
         printf( "Mesh has %i vert and %i faces\n", m.VN(), m.FN() );
 
 
-        bool RemoveDegenerateFlag=true;
-        vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(m, RemoveDegenerateFlag); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
+        // bool RemoveDegenerateFlag=true;
+        // vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(m, RemoveDegenerateFlag); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
+
+        bool RemoveDegenerateFace = NoDengeratedFaces(m);
         printf( "after remove Duplicate Vertex has %i vert and %i faces\n", m.VN(), m.FN() );
         result++;
         printf("%i", result);
@@ -63,14 +71,14 @@ extern "C" {
 
         vcg::tri::UpdateTopology<MyMesh>::FaceFace(m);
 
-        bool isWaterTight = vcg::tri::Clean<MyMesh>::IsWaterTight(m);
+        bool isWaterTight = IsWaterTight(m);
         printf( "IsWaterTight %s \n", isWaterTight ? "True" : "False");
         if (isWaterTight)
             result+=1;
         else
             return result;
 
-        bool isCoherentlyOrientedMesh = vcg::tri::Clean<MyMesh>::IsCoherentlyOrientedMesh(m);
+        bool isCoherentlyOrientedMesh = IsCoherentlyOrientedMesh(m);
         printf( "IsCoherentlyOrientedMesh %s \n", isCoherentlyOrientedMesh ? "True" : "False");
 
         if (isCoherentlyOrientedMesh)
@@ -79,11 +87,9 @@ extern "C" {
             return result;
 
 
-        vcg::tri::Inertia<MyMesh> Ib(m);
-        printf( "Volume %f \n",Ib.Mass());
-        bool isVolumeBiggerThanZero = Ib.Mass() > 0. ;
+        bool isPositiveVolume = IsPositiveVolume(m);
 
-        if (isVolumeBiggerThanZero)
+        if (isPositiveVolume)
             result+=1;
         else
             return result;
@@ -98,7 +104,7 @@ extern "C" {
 int main( int argc, char **argv )
 {
     printf( "start in main\n" );
-    std::string filepath = "./test.txt";
+    std::string filepath = "./Bishop.stl";
     file_check(filepath.c_str());
     // print_file(filepath);
 
