@@ -1,15 +1,24 @@
 #include <helloworld.hpp>
 
-bool NoDengeratedFaces(MyMesh & mesh) {
+bool NoDengeratedFaces(MyMesh & mesh) { // change mesh in-place
+    const int beforeNumFaces = mesh.FN();
+
     bool RemoveDegenerateFlag=true;
     vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
-    return true;
+
+    const int afterNumFaces = mesh.FN();
+
+    return (beforeNumFaces == afterNumFaces);
 }
 
-bool NoDuplicateFaces(MyMesh & mesh) {
-    bool RemoveDegenerateFlag=true;
-    vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
-    return true;
+bool NoDuplicateFaces(MyMesh & mesh) { // change mesh in-place
+    const int beforeNumFaces = mesh.FN();
+
+    vcg::tri::Clean<MyMesh>::RemoveDuplicateFace(mesh); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
+
+    const int afterNumFaces = mesh.FN();
+
+    return (beforeNumFaces == afterNumFaces);
 }
 
 bool IsWaterTight(MyMesh & mesh) {
@@ -26,19 +35,32 @@ bool IsPositiveVolume(MyMesh & mesh) {
     return Ib.Mass() > 0. ;
 }
 
+void loadMesh(MyMesh & mesh, const std::string filepath) {
+
+    int a = 2; // TODO: understand what this is
+    if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(),  a))
+    {
+        printf("Error reading file  %s\n", filepath.c_str());
+        exit(0);
+    }
+
+    bool RemoveDegenerateFlag=false;
+    vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag);
+}
+
 extern "C" {
 
-    void print_file(const std::string filepath) {
-        printf("print_file function reading file  %s\n",filepath.c_str());
+    //void print_file(const std::string filepath) {
+        //printf("print_file function reading file  %s\n",filepath.c_str());
 
-        std::ifstream f(filepath.c_str());
-        if (f.is_open())
-            std::cout << f.rdbuf() << std::endl;
-        else
-            std::cout << "file not open\n";
+        //std::ifstream f(filepath.c_str());
+        //if (f.is_open())
+            //std::cout << f.rdbuf() << std::endl;
+        //else
+            //std::cout << "file not open\n";
 
-        std::cout << "finish\n";
-    }
+        //std::cout << "finish\n";
+    //}
 
     int file_check(const std::string filepath) {
 
@@ -101,12 +123,15 @@ extern "C" {
     }
 }
 
+#ifndef FILECHECK_TEST
 int main( int argc, char **argv )
 {
     printf( "start in main\n" );
-    std::string filepath = "./Bishop.stl";
+    // std::string filepath = "./Bishop.stl";
+    std::string filepath = "/home/mmf159/Documents/vcg_learning/unittest/meshes/duplicateFaces.stl";
     file_check(filepath.c_str());
     // print_file(filepath);
 
     return 0;
 }
+#endif
