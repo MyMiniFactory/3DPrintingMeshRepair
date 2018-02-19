@@ -3,6 +3,20 @@
 #include "catch.hpp"
 #include "helloworld.hpp"
 
+TEST_CASE( "test successful loadMesh", "[file_check]" ) {
+    MyMesh mesh;
+    bool is_successful = loadMesh(mesh, "./meshes/perfect.stl");
+
+    REQUIRE( is_successful == true );
+}
+
+TEST_CASE( "test not successful loadMesh", "[file_check]" ) {
+    MyMesh mesh;
+    bool is_successful = loadMesh(mesh, "./meshes/notexists.stl");
+
+    REQUIRE( is_successful == false );
+}
+
 TEST_CASE( "test NoDengeratedFaces", "[file_check]" ) {
     MyMesh noDengeratedFacesMesh;
     loadMesh(noDengeratedFacesMesh, "./meshes/perfect.stl");
@@ -73,4 +87,18 @@ TEST_CASE( "test not Positive Volume", "[file_check]" ) {
     loadMesh(notPositiveVolumeMesh, "./meshes/notPositiveVolume.stl");
 
     REQUIRE( IsPositiveVolume(notPositiveVolumeMesh) == false );
+}
+
+TEST_CASE( "test no intersecting faces", "[file_check]" ) {
+    MyMesh noIntersectingFacesMesh;
+    loadMesh(noIntersectingFacesMesh, "./meshes/perfect.stl");
+
+    REQUIRE( NoIntersectingFaces(noIntersectingFacesMesh) == true );
+}
+
+TEST_CASE( "test intersecting faces", "[file_check]" ) {
+    MyMesh IntersectingFacesMesh;
+    loadMesh(IntersectingFacesMesh, "./meshes/intersectingFaces.stl");
+
+    REQUIRE( NoIntersectingFaces(IntersectingFacesMesh) == false );
 }

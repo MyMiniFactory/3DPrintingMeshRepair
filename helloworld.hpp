@@ -24,7 +24,7 @@ class MyFace    : public vcg::Face< MyUsedTypes,
     vcg::face::BitFlags > {};
 class MyMesh    : public vcg::tri::TriMesh< std::vector<MyVertex>, std::vector<MyFace> > {};
 
-void loadMesh(MyMesh & mesh, const std::string filepath);
+bool loadMesh(MyMesh & mesh, const std::string filepath);
 
 bool NoDengeratedFaces(MyMesh & mesh);
 bool NoDuplicateFaces(MyMesh & mesh);

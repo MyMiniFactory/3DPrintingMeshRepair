@@ -35,17 +35,19 @@ bool IsPositiveVolume(MyMesh & mesh) {
     return Ib.Mass() > 0. ;
 }
 
-void loadMesh(MyMesh & mesh, const std::string filepath) {
+bool loadMesh(MyMesh & mesh, const std::string filepath) {
 
     int a = 2; // TODO: understand what this is
     if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(),  a))
     {
-        printf("Error reading file  %s\n", filepath.c_str());
-        exit(0);
+        // printf("Error reading file  %s\n", filepath.c_str());
+        return false;
     }
 
     bool RemoveDegenerateFlag=false;
     vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag);
+
+    return true;
 }
 
 extern "C" {
