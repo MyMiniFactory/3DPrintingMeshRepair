@@ -17,32 +17,45 @@ TEST_CASE( "test not successful loadMesh", "[file_check]" ) {
     REQUIRE( is_successful == false );
 }
 
-TEST_CASE( "test NoDengeratedFaces", "[file_check]" ) {
-    MyMesh noDengeratedFacesMesh;
-    loadMesh(noDengeratedFacesMesh, "./meshes/perfect.stl");
+TEST_CASE( "test NoDegeneratedFace", "[file_check]" ) {
+    MyMesh noDegenratedFacesMesh;
+    loadMesh(noDegenratedFacesMesh, "./meshes/perfect.stl");
 
-    REQUIRE( NoDengeratedFaces(noDengeratedFacesMesh) == true );
+    int numDegeneratedFaces;
+
+    REQUIRE(
+        NoDegenratedFaces(noDegenratedFacesMesh, numDegeneratedFaces) == true
+    );
+    REQUIRE( numDegeneratedFaces == 0);
 }
 
 TEST_CASE( "test DengeratedFaces", "[file_check]" ) {
-    MyMesh DengeratedFacesMesh;
-    loadMesh(DengeratedFacesMesh, "./meshes/degeneratedFaces.stl");
+    MyMesh DegenratedFacesMesh;
+    loadMesh(DegenratedFacesMesh, "./meshes/degeneratedFaces.stl");
 
-    REQUIRE( NoDengeratedFaces(DengeratedFacesMesh) == false );
+    int numDegeneratedFaces;
+    REQUIRE(
+        NoDegenratedFaces(DegenratedFacesMesh, numDegeneratedFaces) == false
+    );
+    REQUIRE( numDegeneratedFaces == 2);
 }
 
 TEST_CASE( "test NoDuplicateFaces", "[file_check]" ) {
     MyMesh noDuplicateFacesMesh;
     loadMesh(noDuplicateFacesMesh, "./meshes/perfect.stl");
 
-    REQUIRE( NoDuplicateFaces(noDuplicateFacesMesh) == true );
+    int numDuplicateFaces;
+    REQUIRE( NoDuplicateFaces(noDuplicateFacesMesh, numDuplicateFaces) == true );
+    REQUIRE( numDuplicateFaces == 0 );
 }
 
 TEST_CASE( "test DuplicateFaces", "[file_check]" ) {
     MyMesh DuplicateFacesMesh;
     loadMesh(DuplicateFacesMesh, "./meshes/duplicateFaces.stl");
 
-    REQUIRE( NoDuplicateFaces(DuplicateFacesMesh) == false );
+    int numDuplicateFaces;
+    REQUIRE( NoDuplicateFaces(DuplicateFacesMesh, numDuplicateFaces) == false );
+    REQUIRE( numDuplicateFaces == 1 );
 }
 
 TEST_CASE( "test WaterTight", "[file_check]" ) {
@@ -93,12 +106,20 @@ TEST_CASE( "test no intersecting faces", "[file_check]" ) {
     MyMesh noIntersectingFacesMesh;
     loadMesh(noIntersectingFacesMesh, "./meshes/perfect.stl");
 
-    REQUIRE( NoIntersectingFaces(noIntersectingFacesMesh) == true );
+    int numIntersectingFaces;
+    REQUIRE(
+        NoIntersectingFaces(noIntersectingFacesMesh, numIntersectingFaces) == true
+    );
+    REQUIRE(numIntersectingFaces == 0);
 }
 
 TEST_CASE( "test intersecting faces", "[file_check]" ) {
     MyMesh IntersectingFacesMesh;
     loadMesh(IntersectingFacesMesh, "./meshes/intersectingFaces.stl");
 
-    REQUIRE( NoIntersectingFaces(IntersectingFacesMesh) == false );
+    int numIntersectingFaces;
+    REQUIRE(
+        NoIntersectingFaces(IntersectingFacesMesh, numIntersectingFaces) == false
+    );
+    // REQUIRE(numIntersectingFaces == 0); // the intersecting algorithm is not good enough
 }

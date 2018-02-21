@@ -21,13 +21,15 @@ class MyFace    : public vcg::Face< MyUsedTypes,
     vcg::face::FFAdj,
     vcg::face::Normal3f,
     vcg::face::VertexRef,
+    vcg::face::Mark,
     vcg::face::BitFlags > {};
 class MyMesh    : public vcg::tri::TriMesh< std::vector<MyVertex>, std::vector<MyFace> > {};
 
 bool loadMesh(MyMesh & mesh, const std::string filepath);
 
-bool NoDengeratedFaces(MyMesh & mesh);
-bool NoDuplicateFaces(MyMesh & mesh);
+bool NoDegenratedFaces(MyMesh & mesh, int & numDegeneratedFaces);
+bool NoDuplicateFaces(MyMesh & mesh, int & numDuplicateFaces);
+bool NoIntersectingFaces(MyMesh & mesh, int & numIntersectingFaces);
 bool IsWaterTight(MyMesh & mesh);
 bool IsCoherentlyOrientedMesh(MyMesh & mesh);
 bool IsPositiveVolume(MyMesh & mesh);
