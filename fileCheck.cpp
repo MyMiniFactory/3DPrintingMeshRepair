@@ -1,4 +1,5 @@
-#include <helloworld.hpp>
+#include <fileCheck.hpp>
+#include <array>
 
 bool NoDegenratedFaces(MyMesh & mesh, int & numDuplicateFaces) { // change mesh in-place
     const int beforeNumFaces = mesh.FN();
@@ -78,11 +79,12 @@ extern "C" {
         //std::cout << "finish\n";
     //}
 
-    int file_check(const std::string filepath, float merge_vertice=0) {
+    void file_check(const std::string filepath, array<int, 7> & results,  float merge_vertice=0) {
 
-        int result = 0;
+        std::ostringstream stringStream;
 
         printf("reading file  %s\n",filepath.c_str());
+        printf("tiger test delete me\n");
 
         MyMesh m;
         int a = 2;
@@ -102,85 +104,97 @@ extern "C" {
         int numDegeneratedFaces;
         bool RemoveDegenerateFace = NoDegenratedFaces(m, numDegeneratedFaces);
         printf( "after remove Duplicate Vertex has %i vert and %i faces\n", m.VN(), m.FN() );
-        result++;
+        results[1] = numDegeneratedFaces;
+        stringStream << "numDegeneratedFaces" << std::to_string(numDegeneratedFaces) << ";";
+        // std::cout << stringStream <<"\n test";
 
-        int NumDuplicateFaces;
-        NoDuplicateFaces(m, NumDuplicateFaces);
+        int numDuplicateFaces;
+        NoDuplicateFaces(m, numDuplicateFaces);
 
-        printf( "removed %i duplicate faces\n", NumDuplicateFaces );
+        printf( "removed %i duplicate faces\n", numDuplicateFaces );
         printf( "after remove Duplicate faces has %i vert and %i faces\n", m.VN(), m.FN() );
-        result++;
+        results[2] = numDuplicateFaces;
 
-        vcg::tri::UpdateTopology<MyMesh>::FaceFace(m);
+        vcg::tri::UpdateTopology<MyMesh>::FaceFace(m); // require for isWaterTight
 
         bool isWaterTight = IsWaterTight(m);
-        printf( "IsWaterTight %s \n", isWaterTight ? "True" : "False");
-        if (isWaterTight)
-            result+=1;
-        else
-            return result;
+        printf( "Is WaterTight %s \n", isWaterTight ? "True" : "False");
+        results[3] = isWaterTight;
+        // if (not isWaterTight) return stringStream;
 
-        bool isCoherentlyOrientedMesh = IsCoherentlyOrientedMesh(m);
-        printf( "IsCoherentlyOrientedMesh %s \n", isCoherentlyOrientedMesh ? "True" : "False");
-
-        if (isCoherentlyOrientedMesh)
-            result+=1;
-        else
-            return result;
-
+        bool isCoherentlyOriented = IsCoherentlyOrientedMesh(m);
+        printf( "Is Coherently OrientedMesh %s \n", isCoherentlyOriented ? "True" : "False");
+        results[4] = isCoherentlyOriented;
+        // if (not isCoherentlyOriented) return stringStream;
 
         bool isPositiveVolume = IsPositiveVolume(m);
+        printf( "Is Positive Volume %s \n", isPositiveVolume ? "True" : "False");
+        results[5] = isPositiveVolume;
+        // if (not isPositiveVolume) return stringStream;
 
-        if (isPositiveVolume)
-            result+=1;
-        else
-            return result;
+        int numIntersectingFaces;
+        NoIntersectingFaces(m, numIntersectingFaces);
+        printf("Number of self intersection faces %i\n", numIntersectingFaces);
+        results[6] = numIntersectingFaces;
 
-        // std::vector<MyFace *> IntersFaces;
-        // vcg::tri::Clean<MyMesh>::SelfIntersections(m, IntersFaces);
+        printf("Good\n");
 
-        std::vector<MyFace *> IntersectingFaces;
-        vcg::tri::Clean<MyMesh>::SelfIntersections(m, IntersectingFaces);
-        printf("Number of self intersection faces %i\n", static_cast<int>(IntersectingFaces.size()));
-
-        printf("Good? %s %i \n", ( result == 5 )? "true" : "false", result);
-
-        return result;
+        // return stringStream.str().c_str();
     }
 }
 
 #ifndef FILECHECK_TEST
-int main( int argc, char **argv )
+int main( int argc, char *argv[] )
 {
     printf( "start in main\n" );
     // std::string filepath = "./Bishop.stl";
     // std::string filepath = "/home/mmf159/Documents/vcg_learning/unittest/meshes/duplicateFaces.stl";
     // std::string filepath = "/home/mmf159/Downloads/wholething.stl";
+    if (argc < 2) {
+        printf("please provide path to stl file\n");
+        return 1;
+    }
+
     std::string filepath = argv[1];
 
     printf("----------------- file check -------------------\n");
-    file_check(filepath.c_str());
+    std::array<int, 7>results = {
+        0, // version number
+        -1, // number of degenerated faces
+        -1, // number of duplicate faces
+        -1, // is watertight
+        -1, // is coherently oriented
+        -1, // is positive volume
+        -1 // number of intersecting faces
+    };
 
-    printf("----------------- file check 0.00001 -------------------\n");
-    file_check(filepath.c_str(), 0.00001);
+    file_check(filepath.c_str(), results);
 
-    printf("----------------- file check 0.0001 -------------------\n");
-    file_check(filepath.c_str(), 0.0001);
+    printf("%i version number\n", results[0]);
+    printf("%i num of degen faces\n", results[1]);
+    printf("%i num of dup faces\n", results[2]);
+    printf("%i is watertight\n", results[3]);
+    printf("%i is coherent oriented\n", results[4]);
+    printf("%i is positive volume\n", results[5]);
+    printf("%i num of intersecting faces\n", results[6]);
 
-    printf("----------------- file check 0.001 -------------------\n");
-    file_check(filepath.c_str(), 0.001);
+    // printf("----------------- file check 0.00001 -------------------\n");
+    // file_check(filepath.c_str(), 0.00001);
 
-    // MyMesh mesh;
-    // loadMesh(mesh, filepath);
-    // NoDuplicateFaces(mesh);
+    // printf("----------------- file check 0.0001 -------------------\n");
+    // file_check(filepath.c_str(), 0.0001);
 
+    // printf("----------------- file check 0.001 -------------------\n");
+    // file_check(filepath.c_str(), 0.001);
 
-    //printf("tiger\n");
+     //MyMesh mesh;
+     //loadMesh(mesh, filepath);
 
     //std::vector<MyFace *> IntersectingFaces;
     //vcg::tri::Clean<MyMesh>::SelfIntersections(mesh, IntersectingFaces);
     //printf("Number of self intersection faces %lu\n", IntersectingFaces.size());
 
+    //printf("tiger\n");
      //int counter = 1;
     //for (auto const& face: IntersectingFaces) {
         //auto v0 = face->cV(0)->cP();
