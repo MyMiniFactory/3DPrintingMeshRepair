@@ -1,5 +1,5 @@
-#ifndef HELLOWORLD_HPP
-#define HELLOWORLD_HPP
+#ifndef FILECHECK_HPP
+#define FILECHECK_HPP
 
 #include <vcg/complex/complex.h>
 #include <vcg/complex/algorithms/clean.h>

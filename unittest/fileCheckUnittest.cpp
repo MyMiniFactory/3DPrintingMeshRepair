@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
 
 #include "catch.hpp"
-#include "helloworld.hpp"
+#include "fileCheck.hpp"
 
 TEST_CASE( "test successful loadMesh", "[file_check]" ) {
     MyMesh mesh;

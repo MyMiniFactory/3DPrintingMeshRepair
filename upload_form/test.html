@@ -1,10 +1,10 @@
 
 <script async type="text/javascript" src="../out/filecheck.js"></script>
 <script type="text/javascript">
-    var global_file_counter = 0;
     function uploaded() {
         console.log("hello");
         var uploadform = document.getElementById("fileuploadform");
+        var filename = uploadform.files[0].name;
         console.log(uploadform.files[0]);
         var fr = new FileReader();
 
@@ -12,18 +12,45 @@
             // console.log(fr.data);
             // console.log(fr.result);
             // console.log("atob", atob(fr.result.split(",")[1]));
-            var stl_name = global_file_counter + ".stl"
+            var stl_name = filename;
 
             var data = atob(fr.result.split(",")[1]);
 
-            Module['FS_createDataFile'](".", stl_name, data, true, true);
-            var result = Module.ccall("file_check", ["number"], ["string"], [stl_name]);
-            set_color(result, "green");
+            var intArray = new Int32Array([0, -1, -1, -1, -1, -1 ,-1]);
+            function _arrayToHeap(typedArray){
+                var numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
+                var ptr = Module._malloc(numBytes);
+                var heapBytes = new Uint8Array(Module.HEAPU8.buffer, ptr, numBytes);
+                heapBytes.set(new Uint8Array(typedArray.buffer));
+                return heapBytes;
+            }
+            var heapBytes = _arrayToHeap(intArray);
 
-            global_file_counter += 1
+            Module['FS_createDataFile'](".", stl_name, data, true, true);
+            Module.ccall("file_check", undefined, ["string", "number"], [stl_name, heapBytes.byteOffset]);
+
+            // TODO: if you use allow_memory_grow when compile the js code, the int array's first memory location will changed! thus it will look like the result is not set!
+            var result = new Int32Array(heapBytes.buffer, heapBytes.byteOffset, intArray.length);
+
+            console.log(heapBytes.buffer, heapBytes.byteOffset, intArray.length);
+            console.log(result);
+
+            set_color(0, "green");
+            get_no_degen_faces_string(result[1]);
+            set_color(1, "green");
+            get_no_dup_faces_string(result[2]);
+            if (result[3] === 1) set_color(2, "green");
+            if (result[4] === 1) set_color(3, "green");
+            if (result[5] === 1) set_color(4, "green");
+
+            function _freeArray(heapBytes){
+                Module._free(heapBytes.byteOffset);
+            }
+
+            // _freeArray(heapBytes);
         };
 
-        fr.onloadstart = function(){set_color(5, "red");};
+        fr.onloadstart = set_color_all_red;
 
         fr.readAsDataURL(uploadform.files[0]);
 
@@ -31,21 +58,41 @@
 
     }
 
+
+    function get_no_degen_faces_string(no_degen_faces) {
+        document.getElementById("numDegenFaces").innerHTML = `removed ${no_degen_faces} degenerate faces`;
+    }
+
+    function get_no_dup_faces_string(no_dup_faces) {
+        document.getElementById("numDupFaces").innerHTML = `removed ${no_dup_faces} duplicate faces`;
+    }
+
     function set_color(number, color) {
         var res = document.getElementsByClassName("condition");
-        for (var i=0;i<number;i++) {
-            document.getElementById("condition" + i).style.backgroundColor = color;
+        document.getElementById("condition" + number).style.backgroundColor = color;
+    }
+
+    function set_color_all_red() {
+        var res = document.getElementsByClassName("condition");
+        for (var i=0;i<res.length;i++) {
+            document.getElementById("condition" + i).style.backgroundColor = "red";
         }
+    }
+
+    function init() {
+        get_no_degen_faces_string(0);
+        get_no_dup_faces_string(0);
     }
 
 </script>
 
 <input type="file" onChange="uploaded()" id="fileuploadform"/>
-
-<div id="content">
-    <div id="condition0" class="condition">step degenerate</div>
-    <div id="condition1" class="condition">step duplicate faces</div>
-    <div id="condition2" class="condition">is manifold</div>
-    <div id="condition3" class="condition">is consistent normal</div>
-    <div id="condition4" class="condition">is volume bigger 0</div>
-</div>
+<body onload="init()">
+    <div id="content">
+        <div id="condition0" class="condition"><p id="numDegenFaces"></p></div>
+        <div id="condition1" class="condition"><p id="numDupFaces"></p></div>
+        <div id="condition2" class="condition"><p>is manifold</p></div>
+        <div id="condition3" class="condition"><p>is consistent normal</p></div>
+        <div id="condition4" class="condition"><p>is volume bigger 0</p></div>
+    </div>
+</body>

@@ -79,7 +79,19 @@ extern "C" {
         //std::cout << "finish\n";
     //}
 
-    void file_check(const std::string filepath, array<int, 7> & results,  float merge_vertice=0) {
+    void file_check(const std::string filepath, int* results,  float merge_vertice=0) {
+
+        results[0] = 0; // set version number
+
+        printf("init results is %i %i %i %i %i %i %i\n",
+            results[0],
+            results[1],
+            results[2],
+            results[3],
+            results[4],
+            results[5],
+            results[6]
+        );
 
         std::ostringstream stringStream;
 
@@ -120,26 +132,35 @@ extern "C" {
         bool isWaterTight = IsWaterTight(m);
         printf( "Is WaterTight %s \n", isWaterTight ? "True" : "False");
         results[3] = isWaterTight;
-        // if (not isWaterTight) return stringStream;
+         if (not isWaterTight) return;
 
         bool isCoherentlyOriented = IsCoherentlyOrientedMesh(m);
         printf( "Is Coherently OrientedMesh %s \n", isCoherentlyOriented ? "True" : "False");
         results[4] = isCoherentlyOriented;
-        // if (not isCoherentlyOriented) return stringStream;
+        if (not isCoherentlyOriented) return;
 
         bool isPositiveVolume = IsPositiveVolume(m);
         printf( "Is Positive Volume %s \n", isPositiveVolume ? "True" : "False");
         results[5] = isPositiveVolume;
-        // if (not isPositiveVolume) return stringStream;
+        if (not isPositiveVolume) return;
 
-        int numIntersectingFaces;
-        NoIntersectingFaces(m, numIntersectingFaces);
-        printf("Number of self intersection faces %i\n", numIntersectingFaces);
-        results[6] = numIntersectingFaces;
+        //int numIntersectingFaces;
+        //NoIntersectingFaces(m, numIntersectingFaces);
+        //printf("Number of self intersection faces %i\n", numIntersectingFaces);
+        //results[6] = numIntersectingFaces;
 
         printf("Good\n");
+        printf("results %i %i %i %i %i %i %i\n",
+                results[0],
+                results[1],
+                results[2],
+                results[3],
+                results[4],
+                results[5],
+                results[6]
+                );
 
-        // return stringStream.str().c_str();
+        return;
     }
 }
 
@@ -158,7 +179,7 @@ int main( int argc, char *argv[] )
     std::string filepath = argv[1];
 
     printf("----------------- file check -------------------\n");
-    std::array<int, 7>results = {
+    int results[7] = {
         0, // version number
         -1, // number of degenerated faces
         -1, // number of duplicate faces
