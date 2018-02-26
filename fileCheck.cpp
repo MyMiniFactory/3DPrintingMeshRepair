@@ -1,6 +1,16 @@
 #include <fileCheck.hpp>
 #include <array>
 
+void Boundary(MyMesh & mesh, float* boundary) {
+    vcg::tri::UpdateBounding<MyMesh>::Box(mesh);
+    boundary[0] = mesh.bbox.min.X();
+    boundary[1] = mesh.bbox.max.X();
+    boundary[2] = mesh.bbox.min.Y();
+    boundary[3] = mesh.bbox.max.Y();
+    boundary[4] = mesh.bbox.min.Z();
+    boundary[5] = mesh.bbox.max.Z();
+}
+
 bool NoDegenratedFaces(MyMesh & mesh, int & numDuplicateFaces) { // change mesh in-place
     const int beforeNumFaces = mesh.FN();
 
@@ -79,9 +89,9 @@ extern "C" {
         //std::cout << "finish\n";
     //}
 
-    void file_check(const std::string filepath, int* results,  float merge_vertice=0) {
+    void file_check(const std::string filepath, int* results, float* boundary) {
 
-        results[0] = 0; // set version number
+        results[0] = 1; // set version number
 
         printf("init results is %i %i %i %i %i %i %i %i %i\n",
             results[0],
@@ -109,6 +119,7 @@ extern "C" {
         }
         printf( "Mesh has %i vert and %i faces\n", m.VN(), m.FN() );
 
+        float merge_vertice = .0; // not used
         if (merge_vertice > 0) {
             printf("mesh vertices before merge %i\n", m.VN());
             vcg::tri::Clean<MyMesh>::MergeCloseVertex(m, merge_vertice);
@@ -131,6 +142,11 @@ extern "C" {
 
         results[1] = m.FN();
         results[2] = m.VN();
+
+        Boundary(m, boundary);
+        printf( "xmin %f xmax %f \n", boundary[0], boundary[1]);
+        printf( "ymin %f ymax %f \n", boundary[2], boundary[3]);
+        printf( "zmin %f zmax %f \n", boundary[4], boundary[5]);
 
         vcg::tri::UpdateTopology<MyMesh>::FaceFace(m); // require for isWaterTight
 
@@ -169,6 +185,22 @@ extern "C" {
     }
 }
 
+bool DoesFlipNormalOutside(MyMesh & mesh, int* results) {
+
+    assert(results[0] == 1); // version number needs to be 1
+
+    bool isWaterTight = results[5];
+    bool isCoherentlyOriented = results[6];
+    bool isPositiveVolume = results[7];
+
+    if (isWaterTight && isCoherentlyOriented && not isPositiveVolume) {
+        vcg::tri::Clean<MyMesh>::FlipMesh(mesh);
+        return true;
+    } else {
+        return false;
+    }
+}
+
 #ifndef FILECHECK_TEST
 int main( int argc, char *argv[] )
 {
@@ -185,18 +217,20 @@ int main( int argc, char *argv[] )
 
     printf("----------------- file check -------------------\n");
     int results[9] = {
-        -1, // version number
-        -1, // face number
-        -1, // vertices number
-        -1, // number of degenerated faces
-        -1, // number of duplicate faces
-        -1, // is watertight
-        -1, // is coherently oriented
-        -1, // is positive volume
-        -1 // number of intersecting faces
+        -1, // 0 version number
+        -1, // 1 face number
+        -1, // 2 vertices number
+        -1, // 3 number of degenerated faces
+        -1, // 4 number of duplicate faces
+        -1, // 5 is watertight
+        -1, // 6 is coherently oriented
+        -1, // 7 is positive volume
+        -1  // 8 number of intersecting faces
     };
 
-    file_check(filepath.c_str(), results);
+    float boundary[6];
+
+    file_check(filepath.c_str(), results, boundary);
 
     printf("%i version number\n", results[0]);
     printf("%i face number\n", results[1]);
@@ -207,6 +241,10 @@ int main( int argc, char *argv[] )
     printf("%i is coherent oriented\n", results[6]);
     printf("%i is positive volume\n", results[7]);
     printf("%i num of intersecting faces\n", results[8]);
+
+    printf("xmin %f xmax %f \n", boundary[0], boundary[1]);
+    printf("ymin %f ymax %f \n", boundary[2], boundary[3]);
+    printf("zmin %f zmax %f \n", boundary[4], boundary[5]);
 
     // printf("----------------- file check 0.00001 -------------------\n");
     // file_check(filepath.c_str(), 0.00001);

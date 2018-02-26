@@ -27,11 +27,18 @@ class MyMesh    : public vcg::tri::TriMesh< std::vector<MyVertex>, std::vector<M
 
 bool loadMesh(MyMesh & mesh, const std::string filepath);
 
+void Boundary(MyMesh & mesh, float* boundary);
 bool NoDegenratedFaces(MyMesh & mesh, int & numDegeneratedFaces);
 bool NoDuplicateFaces(MyMesh & mesh, int & numDuplicateFaces);
 bool NoIntersectingFaces(MyMesh & mesh, int & numIntersectingFaces);
 bool IsWaterTight(MyMesh & mesh);
 bool IsCoherentlyOrientedMesh(MyMesh & mesh);
 bool IsPositiveVolume(MyMesh & mesh);
+
+extern "C" {
+    void file_check(const std::string filepath, int* results, float* boundary);
+}
+
+bool DoesFlipNormalOutside(MyMesh & mesh, int* results);
 
 #endif

@@ -133,11 +133,36 @@ TEST_CASE( "test mesh boundary", "[file_check]" ) {
 
     Boundary(Mesh, boundary);
 
-    REQUIRE( boundary[0] == (float) -1.0);
-    REQUIRE( boundary[1] == (float)  1.0);
-    REQUIRE( boundary[2] == (float) -1.0);
-    REQUIRE( boundary[3] == (float)  1.0);
-    REQUIRE( boundary[4] == (float) -1.0);
-    REQUIRE( boundary[5] == (float)  1.0);
+    REQUIRE( boundary[0] == (float) -1.0 );
+    REQUIRE( boundary[1] == (float)  1.0 );
+    REQUIRE( boundary[2] == (float) -1.0 );
+    REQUIRE( boundary[3] == (float)  1.0 );
+    REQUIRE( boundary[4] == (float) -1.0 );
+    REQUIRE( boundary[5] == (float)  1.0 );
     // REQUIRE(numIntersectingFaces == 0); // the intersecting algorithm is not good enough
+}
+
+TEST_CASE( "test flip", "[file_repair]" ) {
+    MyMesh Mesh;
+    auto filepath = meshPath+"notPositiveVolume.stl";
+    loadMesh(Mesh, filepath);
+
+    int results[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    float boundary[6];
+    file_check(filepath.c_str(), results, boundary);
+
+    bool doesFlip = DoesFlipNormalOutside(Mesh, results);
+    REQUIRE( doesFlip == true );
+}
+
+TEST_CASE( "test not flip", "[file_repair]" ) {
+    MyMesh Mesh;
+    auto filepath = meshPath+"perfect.stl";
+
+    int results[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    float boundary[6];
+    file_check(filepath.c_str(), results, boundary);
+
+    bool doesFlip = DoesFlipNormalOutside(Mesh, results);
+    REQUIRE( doesFlip == false );
 }
