@@ -3,23 +3,25 @@
 #include "catch.hpp"
 #include "fileCheck.hpp"
 
+std::string meshPath = "./unittest/meshes/";
+
 TEST_CASE( "test successful loadMesh", "[file_check]" ) {
     MyMesh mesh;
-    bool is_successful = loadMesh(mesh, "./meshes/perfect.stl");
+    bool is_successful = loadMesh(mesh, meshPath+"perfect.stl");
 
     REQUIRE( is_successful == true );
 }
 
 TEST_CASE( "test not successful loadMesh", "[file_check]" ) {
     MyMesh mesh;
-    bool is_successful = loadMesh(mesh, "./meshes/notexists.stl");
+    bool is_successful = loadMesh(mesh, meshPath+"notexists.stl");
 
     REQUIRE( is_successful == false );
 }
 
 TEST_CASE( "test NoDegeneratedFace", "[file_check]" ) {
     MyMesh noDegenratedFacesMesh;
-    loadMesh(noDegenratedFacesMesh, "./meshes/perfect.stl");
+    loadMesh(noDegenratedFacesMesh, meshPath+"perfect.stl");
 
     int numDegeneratedFaces;
 
@@ -31,7 +33,7 @@ TEST_CASE( "test NoDegeneratedFace", "[file_check]" ) {
 
 TEST_CASE( "test DengeratedFaces", "[file_check]" ) {
     MyMesh DegenratedFacesMesh;
-    loadMesh(DegenratedFacesMesh, "./meshes/degeneratedFaces.stl");
+    loadMesh(DegenratedFacesMesh, meshPath+"degeneratedFaces.stl");
 
     int numDegeneratedFaces;
     REQUIRE(
@@ -42,7 +44,7 @@ TEST_CASE( "test DengeratedFaces", "[file_check]" ) {
 
 TEST_CASE( "test NoDuplicateFaces", "[file_check]" ) {
     MyMesh noDuplicateFacesMesh;
-    loadMesh(noDuplicateFacesMesh, "./meshes/perfect.stl");
+    loadMesh(noDuplicateFacesMesh, meshPath+"perfect.stl");
 
     int numDuplicateFaces;
     REQUIRE( NoDuplicateFaces(noDuplicateFacesMesh, numDuplicateFaces) == true );
@@ -51,7 +53,7 @@ TEST_CASE( "test NoDuplicateFaces", "[file_check]" ) {
 
 TEST_CASE( "test DuplicateFaces", "[file_check]" ) {
     MyMesh DuplicateFacesMesh;
-    loadMesh(DuplicateFacesMesh, "./meshes/duplicateFaces.stl");
+    loadMesh(DuplicateFacesMesh, meshPath+"duplicateFaces.stl");
 
     int numDuplicateFaces;
     REQUIRE( NoDuplicateFaces(DuplicateFacesMesh, numDuplicateFaces) == false );
@@ -60,21 +62,21 @@ TEST_CASE( "test DuplicateFaces", "[file_check]" ) {
 
 TEST_CASE( "test WaterTight", "[file_check]" ) {
     MyMesh waterTightMesh;
-    loadMesh(waterTightMesh, "./meshes/perfect.stl");
+    loadMesh(waterTightMesh, meshPath+"perfect.stl");
 
     REQUIRE( IsWaterTight(waterTightMesh) == true );
 }
 
 TEST_CASE( "test Not WaterTight", "[file_check]" ) {
     MyMesh notWaterTightMesh;
-    loadMesh(notWaterTightMesh, "./meshes/notWatertight.stl");
+    loadMesh(notWaterTightMesh, meshPath+"notWatertight.stl");
 
     REQUIRE( IsWaterTight(notWaterTightMesh) == false );
 }
 
 TEST_CASE( "test Coherently Oriented", "[file_check]" ) {
     MyMesh coherentlyOrientedMesh;
-    loadMesh(coherentlyOrientedMesh, "./meshes/perfect.stl");
+    loadMesh(coherentlyOrientedMesh, meshPath+"perfect.stl");
     vcg::tri::UpdateTopology<MyMesh>::FaceFace(coherentlyOrientedMesh);
 
     REQUIRE( IsCoherentlyOrientedMesh(coherentlyOrientedMesh) == true );
@@ -82,7 +84,7 @@ TEST_CASE( "test Coherently Oriented", "[file_check]" ) {
 
 TEST_CASE( "test not Coherently Oriented", "[file_check]" ) {
     MyMesh notCoherentlyOrientedMesh;
-    loadMesh(notCoherentlyOrientedMesh, "./meshes/notCoherentlyOriented.stl");
+    loadMesh(notCoherentlyOrientedMesh, meshPath+"notCoherentlyOriented.stl");
     vcg::tri::UpdateTopology<MyMesh>::FaceFace(notCoherentlyOrientedMesh);
 
     REQUIRE( IsCoherentlyOrientedMesh(notCoherentlyOrientedMesh) == false );
@@ -90,21 +92,21 @@ TEST_CASE( "test not Coherently Oriented", "[file_check]" ) {
 
 TEST_CASE( "test Positive Volume", "[file_check]" ) {
     MyMesh positiveVolumeMesh;
-    loadMesh(positiveVolumeMesh, "./meshes/perfect.stl");
+    loadMesh(positiveVolumeMesh, meshPath+"perfect.stl");
 
     REQUIRE( IsPositiveVolume(positiveVolumeMesh) == true );
 }
 
 TEST_CASE( "test not Positive Volume", "[file_check]" ) {
     MyMesh notPositiveVolumeMesh;
-    loadMesh(notPositiveVolumeMesh, "./meshes/notPositiveVolume.stl");
+    loadMesh(notPositiveVolumeMesh, meshPath+"notPositiveVolume.stl");
 
     REQUIRE( IsPositiveVolume(notPositiveVolumeMesh) == false );
 }
 
 TEST_CASE( "test no intersecting faces", "[file_check]" ) {
     MyMesh noIntersectingFacesMesh;
-    loadMesh(noIntersectingFacesMesh, "./meshes/perfect.stl");
+    loadMesh(noIntersectingFacesMesh, meshPath+"perfect.stl");
 
     int numIntersectingFaces;
     REQUIRE(
@@ -115,11 +117,27 @@ TEST_CASE( "test no intersecting faces", "[file_check]" ) {
 
 TEST_CASE( "test intersecting faces", "[file_check]" ) {
     MyMesh IntersectingFacesMesh;
-    loadMesh(IntersectingFacesMesh, "./meshes/intersectingFaces.stl");
+    loadMesh(IntersectingFacesMesh, meshPath+"intersectingFaces.stl");
 
     int numIntersectingFaces;
     REQUIRE(
         NoIntersectingFaces(IntersectingFacesMesh, numIntersectingFaces) == false
     );
+    // REQUIRE(numIntersectingFaces == 0); // the intersecting algorithm is not good enough
+}
+
+TEST_CASE( "test mesh boundary", "[file_check]" ) {
+    MyMesh Mesh;
+    loadMesh(Mesh, meshPath+"perfect.stl");
+    float boundary[6];
+
+    Boundary(Mesh, boundary);
+
+    REQUIRE( boundary[0] == (float) -1.0);
+    REQUIRE( boundary[1] == (float)  1.0);
+    REQUIRE( boundary[2] == (float) -1.0);
+    REQUIRE( boundary[3] == (float)  1.0);
+    REQUIRE( boundary[4] == (float) -1.0);
+    REQUIRE( boundary[5] == (float)  1.0);
     // REQUIRE(numIntersectingFaces == 0); // the intersecting algorithm is not good enough
 }
