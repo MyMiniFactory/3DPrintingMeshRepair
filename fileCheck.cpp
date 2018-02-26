@@ -83,14 +83,16 @@ extern "C" {
 
         results[0] = 0; // set version number
 
-        printf("init results is %i %i %i %i %i %i %i\n",
+        printf("init results is %i %i %i %i %i %i %i %i %i\n",
             results[0],
             results[1],
             results[2],
             results[3],
             results[4],
             results[5],
-            results[6]
+            results[6],
+            results[7],
+            results[8]
         );
 
         std::ostringstream stringStream;
@@ -116,7 +118,7 @@ extern "C" {
         int numDegeneratedFaces;
         bool RemoveDegenerateFace = NoDegenratedFaces(m, numDegeneratedFaces);
         printf( "after remove Duplicate Vertex has %i vert and %i faces\n", m.VN(), m.FN() );
-        results[1] = numDegeneratedFaces;
+        results[3] = numDegeneratedFaces;
         stringStream << "numDegeneratedFaces" << std::to_string(numDegeneratedFaces) << ";";
         // std::cout << stringStream <<"\n test";
 
@@ -125,23 +127,26 @@ extern "C" {
 
         printf( "removed %i duplicate faces\n", numDuplicateFaces );
         printf( "after remove Duplicate faces has %i vert and %i faces\n", m.VN(), m.FN() );
-        results[2] = numDuplicateFaces;
+        results[4] = numDuplicateFaces;
+
+        results[1] = m.FN();
+        results[2] = m.VN();
 
         vcg::tri::UpdateTopology<MyMesh>::FaceFace(m); // require for isWaterTight
 
         bool isWaterTight = IsWaterTight(m);
         printf( "Is WaterTight %s \n", isWaterTight ? "True" : "False");
-        results[3] = isWaterTight;
+        results[5] = isWaterTight;
          if (not isWaterTight) return;
 
         bool isCoherentlyOriented = IsCoherentlyOrientedMesh(m);
         printf( "Is Coherently OrientedMesh %s \n", isCoherentlyOriented ? "True" : "False");
-        results[4] = isCoherentlyOriented;
+        results[6] = isCoherentlyOriented;
         if (not isCoherentlyOriented) return;
 
         bool isPositiveVolume = IsPositiveVolume(m);
         printf( "Is Positive Volume %s \n", isPositiveVolume ? "True" : "False");
-        results[5] = isPositiveVolume;
+        results[7] = isPositiveVolume;
         if (not isPositiveVolume) return;
 
         //int numIntersectingFaces;
@@ -179,8 +184,10 @@ int main( int argc, char *argv[] )
     std::string filepath = argv[1];
 
     printf("----------------- file check -------------------\n");
-    int results[7] = {
-        0, // version number
+    int results[9] = {
+        -1, // version number
+        -1, // face number
+        -1, // vertices number
         -1, // number of degenerated faces
         -1, // number of duplicate faces
         -1, // is watertight
@@ -192,12 +199,14 @@ int main( int argc, char *argv[] )
     file_check(filepath.c_str(), results);
 
     printf("%i version number\n", results[0]);
-    printf("%i num of degen faces\n", results[1]);
-    printf("%i num of dup faces\n", results[2]);
-    printf("%i is watertight\n", results[3]);
-    printf("%i is coherent oriented\n", results[4]);
-    printf("%i is positive volume\n", results[5]);
-    printf("%i num of intersecting faces\n", results[6]);
+    printf("%i face number\n", results[1]);
+    printf("%i vertices number\n", results[2]);
+    printf("%i num of degen faces\n", results[3]);
+    printf("%i num of dup faces\n", results[4]);
+    printf("%i is watertight\n", results[5]);
+    printf("%i is coherent oriented\n", results[6]);
+    printf("%i is positive volume\n", results[7]);
+    printf("%i num of intersecting faces\n", results[8]);
 
     // printf("----------------- file check 0.00001 -------------------\n");
     // file_check(filepath.c_str(), 0.00001);
