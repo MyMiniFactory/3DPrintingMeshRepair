@@ -1,4 +1,4 @@
-*.stl
 *.swp
-*.off
 vcglib/
+out/
+unittest/unittest_out
