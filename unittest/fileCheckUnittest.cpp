@@ -147,22 +147,95 @@ TEST_CASE( "test flip", "[file_repair]" ) {
     auto filepath = meshPath+"notPositiveVolume.stl";
     loadMesh(Mesh, filepath);
 
-    int results[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
-    float boundary[6];
-    file_check(filepath.c_str(), results, boundary);
-
-    bool doesFlip = DoesFlipNormalOutside(Mesh, results);
+    REQUIRE( IsPositiveVolume(Mesh) == false );
+    bool doesFlip = DoesFlipNormalOutside(Mesh, true, true, false);
     REQUIRE( doesFlip == true );
+    REQUIRE( IsPositiveVolume(Mesh) == true );
 }
 
 TEST_CASE( "test not flip", "[file_repair]" ) {
     MyMesh Mesh;
     auto filepath = meshPath+"perfect.stl";
+    bool doesFlip = DoesFlipNormalOutside(Mesh, true, true, true);
+    REQUIRE( doesFlip == false );
+}
 
+TEST_CASE( "test MakeCoherentlyOriented ", "[file_repair]" ) {
+    MyMesh Mesh;
+    auto filepath = meshPath+"notCoherentlyOriented.stl";
+    loadMesh(Mesh, filepath);
+    vcg::tri::UpdateTopology<MyMesh>::FaceFace(Mesh);
+
+    REQUIRE( IsCoherentlyOrientedMesh(Mesh) == false );
+    bool doesFlip = DoesMakeCoherentlyOriented(Mesh, true, false);
+    REQUIRE( doesFlip == true );
+    REQUIRE( IsCoherentlyOrientedMesh(Mesh) == true );
+}
+
+TEST_CASE( "test not MakeCoherentlyOriented", "[file_repair]" ) {
+    MyMesh Mesh;
+    auto filepath = meshPath+"perfect.stl";
+    bool doesFlip = DoesMakeCoherentlyOriented(Mesh, true, true);
+    REQUIRE( doesFlip == false );
+}
+
+
+TEST_CASE( "test no file repair", "[file_repair]" ) {
+    MyMesh mesh;
+    auto filepath = meshPath+"perfect.stl";
+    loadMesh(mesh, filepath);
     int results[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
     float boundary[6];
-    file_check(filepath.c_str(), results, boundary);
+    file_check(mesh, results, boundary);
 
-    bool doesFlip = DoesFlipNormalOutside(Mesh, results);
-    REQUIRE( doesFlip == false );
+    int repair_record[2] = {-1, -1};
+    file_repair(mesh, results, repair_record);
+
+    REQUIRE(repair_record[0] == 0);
+    REQUIRE(repair_record[1] == 0);
+}
+
+TEST_CASE( "test fix volume and coherent oriented", "[file_repair]" ) {
+    MyMesh mesh;
+    auto filepath = meshPath+"notCoherentlyOriented.stl";
+    loadMesh(mesh, filepath);
+    int results[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    float boundary[6];
+    file_check(mesh, results, boundary);
+
+    int repair_record[2] = {-1, -1};
+    file_repair(mesh, results, repair_record);
+
+    REQUIRE(repair_record[0] == 1);
+    REQUIRE(repair_record[1] == 1);
+}
+
+TEST_CASE( "test only fix positive volume", "[file_repair]" ) {
+    MyMesh mesh;
+    auto filepath = meshPath+"notPositiveVolume.stl";
+    loadMesh(mesh, filepath);
+    int results[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    float boundary[6];
+    file_check(mesh, results, boundary);
+
+    int repair_record[2] = {-1, -1};
+    file_repair(mesh, results, repair_record);
+
+    REQUIRE(repair_record[0] == 0);
+    REQUIRE(repair_record[1] == 1);
+}
+
+TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
+    MyMesh mesh;
+    auto filepath = meshPath+"mostly_notCoherentlyOriented.stl";
+    loadMesh(mesh, filepath);
+    int results[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    float boundary[6];
+    file_check(mesh, results, boundary);
+
+    int repair_record[2] = {-1, -1};
+    file_repair(mesh, results, repair_record);
+
+    REQUIRE(repair_record[0] == 1);
+    REQUIRE(repair_record[1] == 0);
 }

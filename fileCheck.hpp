@@ -4,9 +4,11 @@
 #include <vcg/complex/complex.h>
 #include <vcg/complex/algorithms/clean.h>
 #include <wrap/io_trimesh/import_stl.h>
+#include <wrap/io_trimesh/export_stl.h>
 #include <vcg/complex/algorithms/inertia.h>
 #include <iostream>
 #include <fstream>
+#include <array>
 
 class MyVertex; class MyFace;
 struct MyUsedTypes : public vcg::UsedTypes<vcg::Use<MyVertex>   ::AsVertexType,
@@ -35,10 +37,17 @@ bool IsWaterTight(MyMesh & mesh);
 bool IsCoherentlyOrientedMesh(MyMesh & mesh);
 bool IsPositiveVolume(MyMesh & mesh);
 
+void file_check(MyMesh & m, int* results, float* boundary);
+
 extern "C" {
     void file_check(const std::string filepath, int* results, float* boundary);
 }
 
-bool DoesFlipNormalOutside(MyMesh & mesh, int* results);
+bool DoesFlipNormalOutside(MyMesh & mesh,
+        bool isWaterTight, bool isCoherentlyOriented, bool isPositiveVolume);
+bool DoesMakeCoherentlyOriented(MyMesh & mesh,
+        bool isWaterTight, bool isCoherentlyOriented);
+
+int file_repair(MyMesh & mesh, int* results, int* repair_record);
 
 #endif
