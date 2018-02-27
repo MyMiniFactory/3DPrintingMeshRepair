@@ -7,8 +7,10 @@
 #include <wrap/io_trimesh/export_stl.h>
 #include <vcg/complex/algorithms/inertia.h>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <array>
+#include <stdio.h>
 
 class MyVertex; class MyFace;
 struct MyUsedTypes : public vcg::UsedTypes<vcg::Use<MyVertex>   ::AsVertexType,
