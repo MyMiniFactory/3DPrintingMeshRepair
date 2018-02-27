@@ -56,7 +56,6 @@ bool IsCoherentlyOrientedMesh(MyMesh & mesh) {
 
 bool IsPositiveVolume(MyMesh & mesh) {
     vcg::tri::Inertia<MyMesh> Ib(mesh);
-    printf("volume %f", Ib.Mass());
     return Ib.Mass() > 0. ;
 }
 
@@ -189,6 +188,7 @@ int file_repair(MyMesh & mesh, int* results, int* repair_record) {
 
     bool doesFlipNormalOutside = DoesFlipNormalOutside(mesh, isWaterTight, isCoherentlyOriented, isPositiveVolume);
     repair_record[1] = doesFlipNormalOutside;
+    return 0;
 }
 
 extern "C" {
