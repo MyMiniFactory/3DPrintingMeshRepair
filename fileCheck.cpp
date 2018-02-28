@@ -78,8 +78,6 @@ void file_check(MyMesh & m, int* results, float* boundary) {
 
     results[0] = 1; // set version number
 
-    printf( "Mesh has %i vert and %i faces\n", m.VN(), m.FN() );
-
     float merge_vertice = .0; // not used
     if (merge_vertice > 0) {
         printf("mesh vertices before merge %i\n", m.VN());
@@ -206,9 +204,26 @@ extern "C" {
             printf("Error reading file  %s\n",filepath.c_str());
             exit(0);
         }
+        file_check(mesh, results, boundary);
+    }
+
+    void file_check_repair(const std::string filepath, int* results, float* boundary, int* repair_record) {
+        printf("reading file  %s\n",filepath.c_str());
+
+        MyMesh mesh;
+        int a = 2;
+        if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(),  a))
+        {
+            printf("Error reading file  %s\n",filepath.c_str());
+            exit(0);
+        }
 
         file_check(mesh, results, boundary);
 
+        file_repair(mesh, results, repair_record);
+
+        std::printf("writing to path %s\n", filepath.c_str());
+        vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, filepath.c_str());
     }
 }
 

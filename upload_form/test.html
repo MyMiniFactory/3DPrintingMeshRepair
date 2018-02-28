@@ -1,8 +1,8 @@
 
-<script async type="text/javascript" src="../out/filecheck.js"></script>
+<script async type="text/javascript" src="../upload_form/filecheck.js"></script>
 <script type="text/javascript">
     function uploaded() {
-        console.log("hello");
+        reset();
         var uploadform = document.getElementById("fileuploadform");
         var filename = uploadform.files[0].name;
         console.log(uploadform.files[0]);
@@ -16,41 +16,61 @@
 
             var data = atob(fr.result.split(",")[1]);
 
-            var intArray = new Int32Array([0, -1, -1, -1, -1, -1 ,-1]);
-            function _arrayToHeap(typedArray){
-                var numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
-                var ptr = Module._malloc(numBytes);
-                var heapBytes = new Uint8Array(Module.HEAPU8.buffer, ptr, numBytes);
-                heapBytes.set(new Uint8Array(typedArray.buffer));
-                return heapBytes;
-            }
-            var heapBytes = _arrayToHeap(intArray);
+            var check_report = new Int32Array([
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -1
+            ]);
+            var check_report_heapBytes = _arrayToHeap(check_report);
+
+            var boundary = new Float32Array([
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
+            ]);
+            var boundary_heapBytes = _arrayToHeap(boundary);
+
+            var repair_report = new Int32Array([
+                    -1,
+                    -1
+            ]);
+            var repair_report_heapBytes = _arrayToHeap(repair_report);
 
             Module['FS_createDataFile'](".", stl_name, data, true, true);
-            Module.ccall("file_check", undefined, ["string", "number"], [stl_name, heapBytes.byteOffset]);
+            Module.ccall("file_check_repair", // c function name
+                    undefined, // return
+                    ["string", "number", "number", "number"], // param
+                    [stl_name,
+                     check_report_heapBytes.byteOffset,
+                     boundary_heapBytes.byteOffset,
+                     repair_report_heapBytes.byteOffset
+                    ]
+            );
 
             // TODO: if you use allow_memory_grow when compile the js code, the int array's first memory location will changed! thus it will look like the result is not set!
-            var result = new Int32Array(heapBytes.buffer, heapBytes.byteOffset, intArray.length);
+            var check_report = new Int32Array(check_report_heapBytes.buffer, check_report_heapBytes.byteOffset, check_report.length);
+            var boundary = new Float32Array(boundary_heapBytes.buffer, boundary_heapBytes.byteOffset, boundary.length);
+            var repair_report = new Int32Array(boundary_heapBytes.buffer, repair_report_heapBytes.byteOffset, repair_report.length);
 
-            console.log(heapBytes.buffer, heapBytes.byteOffset, intArray.length);
-            console.log(result);
+            console.log(check_report);
+            console.log(boundary);
+            console.log(repair_report);
 
-            set_color(0, "green");
-            get_no_degen_faces_string(result[1]);
-            set_color(1, "green");
-            get_no_dup_faces_string(result[2]);
-            if (result[3] === 1) set_color(2, "green");
-            if (result[4] === 1) set_color(3, "green");
-            if (result[5] === 1) set_color(4, "green");
+            update_from_result(check_report, repair_report);
 
-            function _freeArray(heapBytes){
-                Module._free(heapBytes.byteOffset);
-            }
 
-            // _freeArray(heapBytes);
+
+            _freeArray(check_report_heapBytes);
         };
-
-        fr.onloadstart = set_color_all_red;
 
         fr.readAsDataURL(uploadform.files[0]);
 
@@ -58,30 +78,149 @@
 
     }
 
-
-    function get_no_degen_faces_string(no_degen_faces) {
-        document.getElementById("numDegenFaces").innerHTML = `removed ${no_degen_faces} degenerate faces`;
+    function _arrayToHeap(typedArray){
+        var numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
+        var ptr = Module._malloc(numBytes);
+        var heapBytes = new Uint8Array(Module.HEAPU8.buffer, ptr, numBytes);
+        heapBytes.set(new Uint8Array(typedArray.buffer));
+        return heapBytes;
+    }
+    function _freeArray(heapBytes){
+        Module._free(heapBytes.byteOffset);
     }
 
-    function get_no_dup_faces_string(no_dup_faces) {
-        document.getElementById("numDupFaces").innerHTML = `removed ${no_dup_faces} duplicate faces`;
-    }
+    function update_from_result(result, repair_report) {
+        const num_degen_faces = result[3];
+        const num_dup_faces = result[4];
+        const is_manifold = result[5];
+        const is_consistent_normal = result[6];
+        const is_volume_bigger_0 = result[7];
 
-    function set_color(number, color) {
-        var res = document.getElementsByClassName("condition");
-        document.getElementById("condition" + number).style.backgroundColor = color;
-    }
+        const fix_cosistent_normal = repair_report[0];
+        const fix_volume_bigger_0 = repair_report[1];
 
-    function set_color_all_red() {
-        var res = document.getElementsByClassName("condition");
-        for (var i=0;i<res.length;i++) {
-            document.getElementById("condition" + i).style.backgroundColor = "red";
+        filecheck_outint_step(num_degen_faces, degenfaces);
+
+        if (num_degen_faces >0) {
+            set_repair_bool_func(remove_num, degenfaces, num_degen_faces);
+            _repair(degenfaces);
+        }
+
+        filecheck_outint_step(num_dup_faces, dupfaces,);
+
+        if (num_dup_faces > 0) {
+            set_repair_bool_func(remove_num, dupfaces, num_dup_faces);
+            _repair(dupfaces);
+        }
+
+        filecheck_outint_step(is_manifold, manifold);
+        filecheck_outint_step(is_consistent_normal, consisnormal);
+
+        if (!is_consistent_normal) {
+            if (fix_cosistent_normal) {
+                set_repair_bool_func(fix, consisnormal);
+                _repair(consisnormal);
+            }
+        }
+
+        filecheck_outint_step(is_volume_bigger_0, volume);
+
+        if (!is_volume_bigger_0) {
+            if (fix_volume_bigger_0) {
+                set_repair_bool_func(fix, volume);
+                _repair(volume);
+            }
         }
     }
 
-    function init() {
-        get_no_degen_faces_string(0);
-        get_no_dup_faces_string(0);
+    function degenfaces() {return "dengenerated faces";}
+    function dupfaces() {return "duplicate faces";}
+    function manifold() {return "manifold";}
+    function consisnormal() {return "consistent normal";}
+    function volume() {return "volume bigger 0";}
+
+    function is(f) {return `Is ${f()}`;};
+    function no(f) {return `No ${f()}`;};
+    function has(f) {return `has ${f()}`;};
+    function not(f) {return `Not ${f()}`;};
+    function fix(f) {return `Fix ${f()}`;};
+
+    function _true(f) {
+        document.getElementById("condition" + f.name).style.backgroundColor = "green";
+
+        if ([degenfaces, dupfaces].includes(f))
+            return no(f);
+        else
+            return is(f);
+    }
+
+    function _false(f) {
+        document.getElementById("condition" + f.name).style.backgroundColor = "red";
+        document.getElementById("down" + f.name).style.display = "None";
+
+        if ([degenfaces, dupfaces].includes(f))
+            return has(f);
+        else
+            return not(f);
+    }
+
+    function _repair(f) {
+        document.getElementById("repair" + f.name).style.backgroundColor = "green";
+        document.getElementById("container" + f.name).style.display = "";
+    }
+
+    function remove_num(f, num) {return `removed ${num} ${f()}`};
+
+    function set_id_str(id, str) {
+        document.getElementById(id).innerHTML = str;
+        document.getElementById(id).style.display = "";
+    }
+
+    function set_name_id_str(name, bool, func, ...args) {
+        return set_id_str(name + func.name, bool(func, ...args));
+    }
+
+    function set_condition_bool_func(...args) {
+        return set_name_id_str("condition", ...args)
+    }
+
+    function set_repair_bool_func(...args) {
+        return set_name_id_str("repair", ...args)
+    }
+
+    function filecheck_outint_step(outint, func) {
+        if (outint === -1) {
+            console.error(`${func()} check is not run`);
+        } else { // this is hack put the degen faces number to result array
+            if ([degenfaces, dupfaces].includes(func)) {
+                if (outint === 0) {
+                    set_condition_bool_func(_true, func);
+                } else { // outint >= 1
+                    set_condition_bool_func(_false, func);
+                }
+            } else {
+                if (outint === 0) {
+                    set_condition_bool_func(_false, func);
+                } else { // outint >= 1
+                    set_condition_bool_func(_true, func);
+                }
+            }
+        }
+    }
+
+    reset();
+
+    function reset() {
+        var res = document.getElementsByClassName("condition");
+        for (var i=0;i<res.length;i++) {
+            res[i].style.backgroundColor = "grey";
+            res[i].innerHTML = "";
+        }
+
+        var res = document.getElementsByClassName("repair");
+        for (var i=0;i<res.length;i++) {
+            res[i].style.display = "None";
+        }
     }
 
 </script>
@@ -120,13 +259,14 @@
 .a_right {
     transform: rotate(-45deg);
     -webkit-transform: rotate(-45deg);
-    margin-top:20px;
+    margin-top:30px;
+    margin-left:3px;
 }
 
 .a_left {
-    transform: rotate(135deg);
-    -webkit-transform: rotate(135deg);
-    margin-top:15px;
+    transform: rotate(90deg);
+    -webkit-transform: rotate(90deg);
+    margin-top:40px;
     margin-left:4px;
 }
 
@@ -154,64 +294,76 @@
 </head>
 <input type="file" onChange="uploaded()" id="fileuploadform"/>
 
-<body onload="init()">
+<body >
     <div id="content">
         <div class="container">
-            <div id="condition0" class="condition left"><p>No Dengenerated Faces</p></div>
-            <div class="rightArrowContainer">
-                <i class="arrow a_right"></i>
-                <i class="arrow a_left"></i>
+            <div id="conditiondegenfaces" class="condition left"><p></p></div>
+            <div class="repair" id="containerdegenfaces">
+                <div class="rightArrowContainer">
+                    <i class="arrow a_right"></i>
+                    <i class="arrow a_left"></i>
+                </div>
+                <div id="repairdegenfaces" class="condition right"><p id="numDegenFaces"></p></div>
             </div>
-            <div id="repair0" class="condition right"><p id="numDegenFaces"></p></div>
         </div>
 
         <div class="downArrowContainer">
-            <i class="arrow a_down"></i>
+            <i class="arrow a_down" id="downdegenfaces"></i>
         </div>
 
         <div class="container">
-            <div id="condition1" class="condition left"><p>No Duplicate Faces</p></div>
-            <div class="rightArrowContainer">
-                <i class="arrow a_right"></i>
-                <i class="arrow a_left"></i>
+            <div id="conditiondupfaces" class="condition left"><p></p></div>
+            <div class="repair" id="containerdupfaces">
+                <div class="rightArrowContainer">
+                    <i class="arrow a_right"></i>
+                    <i class="arrow a_left"></i>
+                </div>
+                <div id="repairdupfaces" class="condition right"><p id="numDupFaces"></p></div>
             </div>
-            <div id="repair1" class="condition right"><p id="numDupFaces"></p></div>
         </div>
 
         <div class="downArrowContainer">
-            <i class="arrow a_down"></i>
+            <i class="arrow a_down" id="downdupfaces"></i>
         </div>
 
         <div class="container">
-            <div id="condition2" class="condition left"><p>is manifold</p></div>
+            <div id="conditionmanifold" class="condition left"><p></p></div>
         </div>
 
         <div class="downArrowContainer">
-            <i class="arrow a_down"></i>
+            <i class="arrow a_down" id="downmanifold"></i>
         </div>
 
         <div class="container">
-            <div id="condition3" class="condition left"><p>is consistent normal</p></div>
-        <div class="rightArrowContainer">
-            <i class="arrow a_right"></i>
-            <i class="arrow a_left"></i>
+            <div id="conditionconsisnormal" class="condition left"><p></p></div>
+            <div class="repair" id="containerconsisnormal">
+                <div class="rightArrowContainer">
+                    <i class="arrow a_right"></i>
+                    <i class="arrow a_left"></i>
+                </div>
+                <div id="repairconsisnormal" class="condition right"><p></p></div>
+            </div>
         </div>
-            <div id="repair3" class="condition right"><p>fix consistent normal</p></div>
-        </div>
-        <!--<i class="arrow a_down"></i>-->
 
         <div class="downArrowContainer">
-            <i class="arrow a_down"></i>
+            <i class="arrow a_down" id="downconsisnormal"></i>
         </div>
 
         <div class="container">
-            <div id="condition4" class="condition left"><p>is volume bigger 0</p></div>
-        <div class="rightArrowContainer">
-            <i class="arrow a_right"></i>
-            <i class="arrow a_left"></i>
+            <div id="conditionvolume" class="condition left"><p></p></div>
+            <div class="repair" id="containervolume">
+                <div class="rightArrowContainer">
+                    <i class="arrow a_right"></i>
+                    <i class="arrow a_left"></i>
+                </div>
+                <div id="repairvolume" class="condition right"><p></p></div>
+            </div>
         </div>
-            <div id="repair4" class="condition right"><p>fix volume</p></div>
+
+        <div class="downArrowContainer">
+            <i class="arrow a_down" id="downvolume"></i>
         </div>
+
     </div>
 </body>
 </html>
