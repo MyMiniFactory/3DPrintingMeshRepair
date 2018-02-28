@@ -14,7 +14,7 @@ EM_UNITTEST_OUT_HTML := ./unittest/unittest_out/filecheck.html
 
 EM_EXTRA_FLAGS := -s DEMANGLE_SUPPORT=1
 
-EM_CXXFLAGS := -s EXPORTED_FUNCTIONS='["_file_check", "_file_check_repair"]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap", "FS_createDataFile"]' -s TOTAL_MEMORY=268435456
+EM_CXXFLAGS := -s EXPORTED_FUNCTIONS='["_file_check", "_file_check_repair"]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap", "FS_createDataFile", "FS_readFile"]' -s TOTAL_MEMORY=268435456
 
 UNITTESTCXXFLAGS := -I ./unittest/catch \
 					-D FILECHECK_TEST

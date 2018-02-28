@@ -223,7 +223,7 @@ extern "C" {
         file_repair(mesh, results, repair_record);
 
         std::printf("writing to path %s\n", filepath.c_str());
-        vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, filepath.c_str());
+        vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, "repaired.stl", false);
     }
 }
 

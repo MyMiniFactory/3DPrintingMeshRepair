@@ -9,9 +9,6 @@
         var fr = new FileReader();
 
         fr.onload = function (){
-            // console.log(fr.data);
-            // console.log(fr.result);
-            // console.log("atob", atob(fr.result.split(",")[1]));
             var stl_name = filename;
 
             var data = atob(fr.result.split(",")[1]);
@@ -46,6 +43,9 @@
             var repair_report_heapBytes = _arrayToHeap(repair_report);
 
             Module['FS_createDataFile'](".", stl_name, data, true, true);
+
+            // var string = Module['FS_readFile']("repaired.stl", { encoding: 'utf8' });
+
             Module.ccall("file_check_repair", // c function name
                     undefined, // return
                     ["string", "number", "number", "number"], // param
@@ -67,15 +67,23 @@
 
             update_from_result(check_report, repair_report);
 
-
-
             _freeArray(check_report_heapBytes);
+            _freeArray(boundary_heapBytes);
+            _freeArray(repair_report_heapBytes);
+
+            download_repaired(stl_name);
         };
 
         fr.readAsDataURL(uploadform.files[0]);
 
         console.log(fr);
 
+    }
+
+    function download_repaired(stl_name) {
+        var string = Module['FS_readFile']("repaired.stl", { encoding: 'binary' });
+        var r_string = new TextDecoder("utf-8").decode(string);
+        download("repaired_" + stl_name, r_string);
     }
 
     function _arrayToHeap(typedArray){
@@ -221,6 +229,21 @@
         for (var i=0;i<res.length;i++) {
             res[i].style.display = "None";
         }
+    }
+
+    function download(filename, text) {
+        var pom = document.createElement('a');
+        pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        pom.setAttribute('download', filename);
+
+        if (document.createEvent) {
+                var event = document.createEvent('MouseEvents');
+                event.initEvent('click', true, true);
+                pom.dispatchEvent(event);
+            }
+        else {
+                pom.click();
+            }
     }
 
 </script>
