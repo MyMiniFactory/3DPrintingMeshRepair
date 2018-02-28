@@ -244,7 +244,7 @@ int main( int argc, char *argv[] )
     }
 
     std::string repaired_path;
-    if (argc == 3) {
+    if (argc >= 3) {
         std::string filepath_0 = argv[1];
         std::string filepath_1 = argv[2];
         if (filepath_0 == filepath_1) {
@@ -341,8 +341,10 @@ int main( int argc, char *argv[] )
 
     // IsPositiveVolume(mesh);
 
-    if (not repaired_path.empty())
+    if (not repaired_path.empty()) {
+        std::printf("writing to path %s\n", repaired_path.c_str());
         vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+    }
 
     assert(results[0] == 1); // make sure the version is 1
 
