@@ -1,4 +1,3 @@
 *.swp
-vcglib/
 out/
 unittest/unittest_out
