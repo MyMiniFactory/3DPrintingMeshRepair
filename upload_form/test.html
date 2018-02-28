@@ -86,13 +86,132 @@
 
 </script>
 
+<html>
+<head>
+<style>
+
+#content {
+    width: 300px;
+}
+.condition {
+    width: 100px;
+    height: 70px;
+    background-color: grey;
+}
+.container {
+    width: 220px;
+    height: 70px;
+    display: inline-block;
+    margin: 1px;
+}
+
+.arrow {
+    border: solid black;
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+}
+
+.a_down {
+    transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+}
+
+.a_right {
+    transform: rotate(-45deg);
+    -webkit-transform: rotate(-45deg);
+    margin-top:20px;
+}
+
+.a_left {
+    transform: rotate(135deg);
+    -webkit-transform: rotate(135deg);
+    margin-top:15px;
+    margin-left:4px;
+}
+
+.left {
+    float: left;
+}
+.right {
+    float: right;
+}
+
+.downArrowContainer {
+    height: 15px;
+    margin-bottom: 5px;
+    margin-top: 5px;
+    margin-left: 45px;
+}
+
+.rightArrowContainer {
+    width: 15px;
+    height: 70px; /* inherit from container */
+    float: left;
+}
+
+</style>
+</head>
 <input type="file" onChange="uploaded()" id="fileuploadform"/>
+
 <body onload="init()">
     <div id="content">
-        <div id="condition0" class="condition"><p id="numDegenFaces"></p></div>
-        <div id="condition1" class="condition"><p id="numDupFaces"></p></div>
-        <div id="condition2" class="condition"><p>is manifold</p></div>
-        <div id="condition3" class="condition"><p>is consistent normal</p></div>
-        <div id="condition4" class="condition"><p>is volume bigger 0</p></div>
+        <div class="container">
+            <div id="condition0" class="condition left"><p>No Dengenerated Faces</p></div>
+            <div class="rightArrowContainer">
+                <i class="arrow a_right"></i>
+                <i class="arrow a_left"></i>
+            </div>
+            <div id="repair0" class="condition right"><p id="numDegenFaces"></p></div>
+        </div>
+
+        <div class="downArrowContainer">
+            <i class="arrow a_down"></i>
+        </div>
+
+        <div class="container">
+            <div id="condition1" class="condition left"><p>No Duplicate Faces</p></div>
+            <div class="rightArrowContainer">
+                <i class="arrow a_right"></i>
+                <i class="arrow a_left"></i>
+            </div>
+            <div id="repair1" class="condition right"><p id="numDupFaces"></p></div>
+        </div>
+
+        <div class="downArrowContainer">
+            <i class="arrow a_down"></i>
+        </div>
+
+        <div class="container">
+            <div id="condition2" class="condition left"><p>is manifold</p></div>
+        </div>
+
+        <div class="downArrowContainer">
+            <i class="arrow a_down"></i>
+        </div>
+
+        <div class="container">
+            <div id="condition3" class="condition left"><p>is consistent normal</p></div>
+        <div class="rightArrowContainer">
+            <i class="arrow a_right"></i>
+            <i class="arrow a_left"></i>
+        </div>
+            <div id="repair3" class="condition right"><p>fix consistent normal</p></div>
+        </div>
+        <!--<i class="arrow a_down"></i>-->
+
+        <div class="downArrowContainer">
+            <i class="arrow a_down"></i>
+        </div>
+
+        <div class="container">
+            <div id="condition4" class="condition left"><p>is volume bigger 0</p></div>
+        <div class="rightArrowContainer">
+            <i class="arrow a_right"></i>
+            <i class="arrow a_left"></i>
+        </div>
+            <div id="repair4" class="condition right"><p>fix volume</p></div>
+        </div>
     </div>
 </body>
+</html>
