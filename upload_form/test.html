@@ -2,16 +2,15 @@
 <script async type="text/javascript" src="../upload_form/filecheck.js"></script>
 <script type="text/javascript">
     function uploaded() {
-        reset();
+        reset2();
         var uploadform = document.getElementById("fileuploadform");
         var filename = uploadform.files[0].name;
-        console.log(uploadform.files[0]);
         var fr = new FileReader();
 
         fr.onload = function (){
             var stl_name = filename;
 
-            var data = atob(fr.result.split(",")[1]);
+            var data = atob(fr.result.split(",")[1]); // base64 to Uint8 for emscripten
 
             var check_report = new Int32Array([
                     -1,
@@ -44,8 +43,6 @@
 
             Module['FS_createDataFile'](".", stl_name, data, true, true);
 
-            // var string = Module['FS_readFile']("repaired.stl", { encoding: 'utf8' });
-
             Module.ccall("file_check_repair", // c function name
                     undefined, // return
                     ["string", "number", "number", "number"], // param
@@ -75,15 +72,29 @@
         };
 
         fr.readAsDataURL(uploadform.files[0]);
-
-        console.log(fr);
-
     }
 
     function download_repaired(stl_name) {
-        var string = Module['FS_readFile']("repaired.stl", { encoding: 'binary' });
-        var r_string = new TextDecoder("utf-8").decode(string);
-        download("repaired_" + stl_name, r_string);
+        // var uint8array = Module['FS_readFile'](stl_name, { encoding: 'binary' });
+        // console.log(uint8array);
+        // var r_string = new TextDecoder("utf8").decode(uint8array);
+        // console.log(r_string);
+        // var base64_string = btoa(r_string);
+        // console.log(base64_string);
+        // download("repaired_" + stl_name, base64_string);
+
+        // var uint8array = Module['FS_readFile'](stl_name, { encoding: 'binary' });
+        // console.log(uint8array);
+        // var r_string = new TextDecoder("utf8").decode(uint8array);
+        // console.log(r_string);
+        // var base64_string = btoa(r_string);
+        // console.log(base64_string);
+        // download("repaired_" + stl_name, base64_string);
+
+
+        var uint8array = Module['FS_readFile']("repaired.stl", { encoding: 'binary' });
+        var base64_string = Uint8ToString(uint8array);
+        download("repaired_"+stl_name, btoa(base64_string));
     }
 
     function _arrayToHeap(typedArray){
@@ -98,13 +109,18 @@
     }
 
     function update_from_result(result, repair_report) {
+        const repair_divs = document.getElementsByClassName("repair");
+        for (var i=0;i<repair_divs.length;i++) {
+            repair_divs[i].style.display = "None";
+        }
+
         const num_degen_faces = result[3];
         const num_dup_faces = result[4];
         const is_manifold = result[5];
         const is_consistent_normal = result[6];
         const is_volume_bigger_0 = result[7];
 
-        const fix_cosistent_normal = repair_report[0];
+        const fix_consistent_normal = repair_report[0];
         const fix_volume_bigger_0 = repair_report[1];
 
         filecheck_outint_step(num_degen_faces, degenfaces);
@@ -124,19 +140,24 @@
         filecheck_outint_step(is_manifold, manifold);
         filecheck_outint_step(is_consistent_normal, consisnormal);
 
-        if (!is_consistent_normal) {
-            if (fix_cosistent_normal) {
+        if (fix_consistent_normal !== -1) {
+            if (fix_consistent_normal) {
                 set_repair_bool_func(fix, consisnormal);
                 _repair(consisnormal);
+            } else if (fix_consistent_normal !== -1){
+                filecheck_outint_step(1, volume);
             }
         }
 
         filecheck_outint_step(is_volume_bigger_0, volume);
 
-        if (!is_volume_bigger_0) {
+        if (fix_volume_bigger_0 !== -1) {
             if (fix_volume_bigger_0) {
                 set_repair_bool_func(fix, volume);
                 _repair(volume);
+                filecheck_outint_step(0, volume);
+            } else if (fix_volume_bigger_0 !== -1){
+                filecheck_outint_step(1, volume);
             }
         }
     }
@@ -146,6 +167,9 @@
     function manifold() {return "manifold";}
     function consisnormal() {return "consistent normal";}
     function volume() {return "volume bigger 0";}
+
+    function check_for(f) {return `Check for ${f()}`;}
+    function repair_for(f) {return `Repair for ${f()}`;}
 
     function is(f) {return `Is ${f()}`;};
     function no(f) {return `No ${f()}`;};
@@ -198,7 +222,8 @@
 
     function filecheck_outint_step(outint, func) {
         if (outint === -1) {
-            console.error(`${func()} check is not run`);
+            // console.error(`${func()} check is not run`);
+            console.log(`${func()} check is not run`);
         } else { // this is hack put the degen faces number to result array
             if ([degenfaces, dupfaces].includes(func)) {
                 if (outint === 0) {
@@ -216,8 +241,6 @@
         }
     }
 
-    reset();
-
     function reset() {
         var res = document.getElementsByClassName("condition");
         for (var i=0;i<res.length;i++) {
@@ -231,19 +254,68 @@
         }
     }
 
+    function reset2() {
+        console.log("reset");
+        const to_empty = document.getElementById("content");
+        while (to_empty.firstChild) {
+            to_empty.removeChild(to_empty.firstChild);
+        }
+
+        init();
+    }
     function download(filename, text) {
-        var pom = document.createElement('a');
-        pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+
+        var pom = document.getElementById('download');
+        pom.setAttribute('href', 'data:application/sla;base64,' + text);
         pom.setAttribute('download', filename);
 
-        if (document.createEvent) {
-                var event = document.createEvent('MouseEvents');
-                event.initEvent('click', true, true);
-                pom.dispatchEvent(event);
-            }
-        else {
-                pom.click();
-            }
+        // if (document.createEvent) {
+                // var event = document.createEvent('MouseEvents');
+                // event.initEvent('click', true, true);
+                // pom.dispatchEvent(event);
+            // }
+        // else {
+                // pom.click();
+            // }
+    }
+
+    function init() {
+        const funcs = [degenfaces, dupfaces, manifold, consisnormal, volume];
+        for (let i=0; i < funcs.length; i++) {
+            const func = funcs[i];
+            const func_name = funcs[i].name;
+
+            let temp = document.getElementsByTagName("template")[0];
+
+            let container = temp.content.querySelector(".left");
+            container.id = "condition" + func_name;
+            container.innerHTML = check_for(func);
+
+            let repair_div = temp.content.querySelector(".repair");
+            repair_div.id = "container" + func_name;
+
+            let repair_right_div = temp.content.querySelector(".right");
+            repair_right_div.id = "repair" + func_name;
+            repair_right_div.innerHTML = repair_for(func);
+
+            let arrow_down = temp.content.querySelector(".a_down");
+            arrow_down.id = "down" + func_name;
+
+            const to_add = document.importNode(temp.content, true);
+            document.getElementById("content").appendChild(to_add);
+        }
+    }
+
+    // https://stackoverflow.com/questions/12710001/how-to-convert-uint8-array-to-base64-encoded-string
+    // TODO: figure out why TextDecoder doesn't work
+    // apply fail since big stack
+    function Uint8ToString(u8a){
+      var CHUNK_SZ = 0x8000;
+      var c = [];
+      for (var i=0; i < u8a.length; i+=CHUNK_SZ) {
+          c.push(String.fromCharCode.apply(null, u8a.subarray(i, i+CHUNK_SZ)));
+        }
+        return c.join("");
     }
 
 </script>
@@ -313,80 +385,37 @@
     float: left;
 }
 
+#download {
+    width: 200px;
+    height: 50px; /* inherit from container */
+}
+
 </style>
 </head>
 <input type="file" onChange="uploaded()" id="fileuploadform"/>
 
-<body >
-    <div id="content">
-        <div class="container">
-            <div id="conditiondegenfaces" class="condition left"><p></p></div>
-            <div class="repair" id="containerdegenfaces">
-                <div class="rightArrowContainer">
-                    <i class="arrow a_right"></i>
-                    <i class="arrow a_left"></i>
+<body onload="init()">
+
+    <template id="container">
+        <div>
+            <div class="container">
+                <div class="condition left"><p></p></div>
+                <div class="repair" >
+                    <div class="rightArrowContainer">
+                        <i class="arrow a_right"></i>
+                        <i class="arrow a_left"></i>
+                    </div>
+                    <div class="condition right"></div>
                 </div>
-                <div id="repairdegenfaces" class="condition right"><p id="numDegenFaces"></p></div>
             </div>
-        </div>
 
-        <div class="downArrowContainer">
-            <i class="arrow a_down" id="downdegenfaces"></i>
-        </div>
-
-        <div class="container">
-            <div id="conditiondupfaces" class="condition left"><p></p></div>
-            <div class="repair" id="containerdupfaces">
-                <div class="rightArrowContainer">
-                    <i class="arrow a_right"></i>
-                    <i class="arrow a_left"></i>
-                </div>
-                <div id="repairdupfaces" class="condition right"><p id="numDupFaces"></p></div>
+            <div class="downArrowContainer">
+                <i class="arrow a_down"></i>
             </div>
-        </div>
+        <div>
+    </template>
 
-        <div class="downArrowContainer">
-            <i class="arrow a_down" id="downdupfaces"></i>
-        </div>
-
-        <div class="container">
-            <div id="conditionmanifold" class="condition left"><p></p></div>
-        </div>
-
-        <div class="downArrowContainer">
-            <i class="arrow a_down" id="downmanifold"></i>
-        </div>
-
-        <div class="container">
-            <div id="conditionconsisnormal" class="condition left"><p></p></div>
-            <div class="repair" id="containerconsisnormal">
-                <div class="rightArrowContainer">
-                    <i class="arrow a_right"></i>
-                    <i class="arrow a_left"></i>
-                </div>
-                <div id="repairconsisnormal" class="condition right"><p></p></div>
-            </div>
-        </div>
-
-        <div class="downArrowContainer">
-            <i class="arrow a_down" id="downconsisnormal"></i>
-        </div>
-
-        <div class="container">
-            <div id="conditionvolume" class="condition left"><p></p></div>
-            <div class="repair" id="containervolume">
-                <div class="rightArrowContainer">
-                    <i class="arrow a_right"></i>
-                    <i class="arrow a_left"></i>
-                </div>
-                <div id="repairvolume" class="condition right"><p></p></div>
-            </div>
-        </div>
-
-        <div class="downArrowContainer">
-            <i class="arrow a_down" id="downvolume"></i>
-        </div>
-
-    </div>
+    <div id="content"></div>
+    <a id="download"><button>Click to download repaired file</button></a>
 </body>
 </html>
