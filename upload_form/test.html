@@ -68,33 +68,21 @@
             _freeArray(boundary_heapBytes);
             _freeArray(repair_report_heapBytes);
 
-            download_repaired(stl_name);
+            blob_download(stl_name);
         };
 
         fr.readAsDataURL(uploadform.files[0]);
     }
 
-    function download_repaired(stl_name) {
-        // var uint8array = Module['FS_readFile'](stl_name, { encoding: 'binary' });
-        // console.log(uint8array);
-        // var r_string = new TextDecoder("utf8").decode(uint8array);
-        // console.log(r_string);
-        // var base64_string = btoa(r_string);
-        // console.log(base64_string);
-        // download("repaired_" + stl_name, base64_string);
+    function blob_download(stl_name) {
+        let binary_data = Module['FS_readFile']('repaired.stl');
+        let blob = new Blob([binary_data], {type: 'application/sla'})
+        let url = window.URL.createObjectURL(blob);
 
-        // var uint8array = Module['FS_readFile'](stl_name, { encoding: 'binary' });
-        // console.log(uint8array);
-        // var r_string = new TextDecoder("utf8").decode(uint8array);
-        // console.log(r_string);
-        // var base64_string = btoa(r_string);
-        // console.log(base64_string);
-        // download("repaired_" + stl_name, base64_string);
-
-
-        var uint8array = Module['FS_readFile']("repaired.stl", { encoding: 'binary' });
-        var base64_string = Uint8ToString(uint8array);
-        download("repaired_"+stl_name, btoa(base64_string));
+        var download_button = document.getElementById('download');
+        download_button.href = url;
+        download_button.download = 'repaired_' + stl_name;
+        download_button.firstElementChild.innerHTML = "Click to download " + download_button.download;
     }
 
     function _arrayToHeap(typedArray){
@@ -262,21 +250,6 @@
         }
 
         init();
-    }
-    function download(filename, text) {
-
-        var pom = document.getElementById('download');
-        pom.setAttribute('href', 'data:application/sla;base64,' + text);
-        pom.setAttribute('download', filename);
-
-        // if (document.createEvent) {
-                // var event = document.createEvent('MouseEvents');
-                // event.initEvent('click', true, true);
-                // pom.dispatchEvent(event);
-            // }
-        // else {
-                // pom.click();
-            // }
     }
 
     function init() {
