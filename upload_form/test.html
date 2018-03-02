@@ -62,19 +62,18 @@
             console.log(boundary);
             console.log(repair_report);
 
-            update_from_result(check_report, repair_report);
+            update_from_result(check_report, repair_report, stl_name);
 
             _freeArray(check_report_heapBytes);
             _freeArray(boundary_heapBytes);
             _freeArray(repair_report_heapBytes);
-
-            blob_download(stl_name);
         };
 
         fr.readAsDataURL(uploadform.files[0]);
     }
 
     function blob_download(stl_name) {
+        console.log("blob download");
         let binary_data = Module['FS_readFile']('repaired.stl');
         let blob = new Blob([binary_data], {type: 'application/sla'})
         let url = window.URL.createObjectURL(blob);
@@ -82,7 +81,13 @@
         var download_button = document.getElementById('download');
         download_button.href = url;
         download_button.download = 'repaired_' + stl_name;
-        download_button.firstElementChild.innerHTML = "Click to download " + download_button.download;
+        set_download_text_disabled("Click to download " + download_button.download, false);
+    }
+
+    function set_download_text_disabled(text, disabled) {
+        var download_button = document.getElementById('download');
+        download_button.firstElementChild.innerHTML = text;
+        download_button.firstElementChild.disabled = disabled;
     }
 
     function _arrayToHeap(typedArray){
@@ -96,7 +101,7 @@
         Module._free(heapBytes.byteOffset);
     }
 
-    function update_from_result(result, repair_report) {
+    function update_from_result(result, repair_report, stl_name) {
         const repair_divs = document.getElementsByClassName("repair");
         for (var i=0;i<repair_divs.length;i++) {
             repair_divs[i].style.display = "None";
@@ -147,6 +152,21 @@
             } else if (fix_volume_bigger_0 !== -1){
                 filecheck_outint_step(1, volume);
             }
+        }
+
+        if (is_manifold) {
+            if (
+                num_degen_faces>0 ||
+                num_dup_faces>0 ||
+                fix_consistent_normal===1 ||
+                fix_volume_bigger_0===1
+            ) {
+                blob_download(stl_name);
+            } else {
+                set_download_text_disabled("original mesh is perfect", true);
+            }
+        } else {
+            set_download_text_disabled("repair for this coming soon...", true);
         }
     }
 
@@ -389,6 +409,6 @@
     </template>
 
     <div id="content"></div>
-    <a id="download"><button>Click to download repaired file</button></a>
+    <a id="download"><button disabled>Click to download repaired file</button></a>
 </body>
 </html>
