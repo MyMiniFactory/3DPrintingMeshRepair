@@ -59,6 +59,13 @@ bool IsPositiveVolume(MyMesh & mesh) {
     return Ib.Mass() > 0. ;
 }
 
+bool IsSingleShell(MyMesh & mesh, int & numConnectedComponents) {
+
+    numConnectedComponents = vcg::tri::Clean<MyMesh>::CountConnectedComponents(mesh);
+    return (numConnectedComponents == 1) ? true : false;
+}
+
+
 bool loadMesh(MyMesh & mesh, const std::string filepath) {
 
     int a = 2; // TODO: understand what this is
@@ -76,7 +83,7 @@ bool loadMesh(MyMesh & mesh, const std::string filepath) {
 
 void file_check(MyMesh & m, int* results, float* boundary) {
 
-    results[0] = 1; // set version number
+    results[0] = 2; // set version number
 
     float merge_vertice = .0; // not used
     if (merge_vertice > 0) {
@@ -127,10 +134,15 @@ void file_check(MyMesh & m, int* results, float* boundary) {
     results[7] = isPositiveVolume;
     if (not isPositiveVolume) return;
 
-    //int numIntersectingFaces;
-    //NoIntersectingFaces(m, numIntersectingFaces);
-    //printf("Number of self intersection faces %i\n", numIntersectingFaces);
-    //results[6] = numIntersectingFaces;
+    int numIntersectingFaces;
+    NoIntersectingFaces(m, numIntersectingFaces);
+    printf("Number of self intersection faces %i\n", numIntersectingFaces);
+    results[8] = numIntersectingFaces;
+
+    int numConnectedComponents;
+    IsSingleShell(m, numConnectedComponents);
+    printf("number of connected components %i\n", numConnectedComponents);
+    results[9] = numConnectedComponents;
 
     printf("Good\n");
 
@@ -138,7 +150,7 @@ void file_check(MyMesh & m, int* results, float* boundary) {
 }
 
 int file_repair(MyMesh & mesh, int* results, int* repair_record) {
-    assert(results[0] == 1); // version number needs to be 1
+    assert(results[0] == 2); // version number needs to be 1
 
     printf("----------------- file repair-------------------\n");
 
@@ -250,12 +262,13 @@ bool DoesMakeCoherentlyOriented(MyMesh & mesh, bool isWaterTight, bool isCoheren
 #ifndef FILECHECK_TEST
 int main( int argc, char *argv[] )
 {
-    // std::string filepath = "./Bishop.stl";
+    std::string filepath = "./unittest/meshes/perfect.stl";
     // std::string filepath = "/home/mmf159/Documents/vcg_learning/unittest/meshes/duplicateFaces.stl";
     // std::string filepath = "/home/mmf159/Downloads/wholething.stl";
     if (argc < 2) {
-        printf("please provide path to stl file\n");
-        return 1;
+        printf("path to stl file not provided use default\n");
+    } else {
+        filepath = argv[1];
     }
 
     std::string repaired_path;
@@ -277,10 +290,9 @@ int main( int argc, char *argv[] )
         report_path = argv[3];
     }
 
-    std::string filepath = argv[1];
 
     printf("----------------- file check -------------------\n");
-    int results[9] = {
+    int results[10] = {
         -1, // 0 version number
         -1, // 1 face number
         -1, // 2 vertices number
@@ -289,7 +301,8 @@ int main( int argc, char *argv[] )
         -1, // 5 is watertight
         -1, // 6 is coherently oriented
         -1, // 7 is positive volume
-        -1  // 8 number of intersecting faces
+        -1, // 8 number of intersecting faces
+        -1  // 9 number of connected components
     };
 
     float boundary[6] = {-1, -1, -1, -1, -1, -1};
@@ -301,67 +314,18 @@ int main( int argc, char *argv[] )
     }
     file_check(mesh, results, boundary);
 
-    //printf("%i version number\n", results[0]);
-    //printf("%i face number\n", results[1]);
-    //printf("%i vertices number\n", results[2]);
-    //printf("%i num of degen faces\n", results[3]);
-    //printf("%i num of dup faces\n", results[4]);
-    //printf("%i is watertight\n", results[5]);
-    //printf("%i is coherent oriented\n", results[6]);
-    //printf("%i is positive volume\n", results[7]);
-    //printf("%i num of intersecting faces\n", results[8]);
-
-    //printf("xmin %f xmax %f \n", boundary[0], boundary[1]);
-    //printf("ymin %f ymax %f \n", boundary[2], boundary[3]);
-    //printf("zmin %f zmax %f \n", boundary[4], boundary[5]);
-
-    // printf("----------------- file check 0.00001 -------------------\n");
-    // file_check(filepath.c_str(), 0.00001);
-
-    // printf("----------------- file check 0.0001 -------------------\n");
-    // file_check(filepath.c_str(), 0.0001);
-
-    // printf("----------------- file check 0.001 -------------------\n");
-    // file_check(filepath.c_str(), 0.001);
-
-     //MyMesh mesh;
-     //loadMesh(mesh, filepath);
-
-    //std::vector<MyFace *> IntersectingFaces;
-    //vcg::tri::Clean<MyMesh>::SelfIntersections(mesh, IntersectingFaces);
-    //printf("Number of self intersection faces %lu\n", IntersectingFaces.size());
-
-    //printf("tiger\n");
-     //int counter = 1;
-    //for (auto const& face: IntersectingFaces) {
-        //auto v0 = face->cV(0)->cP();
-        //auto v1 = face->cV(1)->cP();
-        //auto v2 = face->cV(2)->cP();
-        //printf("v %f %f %f \n", v0[0], v0[1], v0[2]);
-        //printf("v %f %f %f \n", v1[0], v1[1], v1[2]);
-        //printf("v %f %f %f \n", v2[0], v2[1], v2[2]);
-        //printf("f %i %i %i \n", counter, counter+1, counter+2);
-        //printf("\n");
-        //counter += 3;
-    //}
-
     int repair_record[2] = {
         -1, // fix CoherentlyOriented
         -1  // fix not Positive Volume
     };
     file_repair(mesh, results, repair_record);
 
-    // bool doesMakeCoherentlyOriented = DoesMakeCoherentlyOriented(mesh, true, true);
-    // printf("doesMakeCoherentlyOriented %i\n", doesMakeCoherentlyOriented ? true : false);
-
-    // IsPositiveVolume(mesh);
-
     if (not repaired_path.empty()) {
         std::printf("writing to path %s\n", repaired_path.c_str());
         vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
     }
 
-    assert(results[0] == 1); // make sure the version is 1
+    assert(results[0] == 2); // make sure the version is 1
 
     if (report_path.empty()) {
         std::printf("report_path is not provided, write to stdout\n");
@@ -382,6 +346,7 @@ int main( int argc, char *argv[] )
     std::fprintf(report, "%d is_coherently_oriented\n",          results[6]);
     std::fprintf(report, "%d is_positive_volume\n",              results[7]);
     std::fprintf(report, "%d num_intersecting_faces\n",          results[8]);
+    std::fprintf(report, "%d num_shells\n",                      results[9]);
     std::fprintf(report, "%f min_x\n",                          boundary[0]);
     std::fprintf(report, "%f max_x\n",                          boundary[1]);
     std::fprintf(report, "%f min_y\n",                          boundary[2]);

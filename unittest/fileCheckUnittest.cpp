@@ -142,6 +142,24 @@ TEST_CASE( "test mesh boundary", "[file_check]" ) {
     // REQUIRE(numIntersectingFaces == 0); // the intersecting algorithm is not good enough
 }
 
+//TEST_CASE( "test shell", "[file_check]" ) {
+    //MyMesh Mesh;
+    //loadMesh(Mesh, meshPath+"perfect.stl");
+    //int numConnectedComponents;
+    //REQUIRE( IsSingleShell(Mesh, numConnectedComponents) == true );
+    //REQUIRE( numConnectedComponents == 2 );
+//}
+
+//TEST_CASE( "test multiple shells", "[file_check]" ) {
+    //MyMesh Mesh;
+    //loadMesh(Mesh, meshPath+"twoCubes.stl");
+    //int numConnectedComponents;
+    //REQUIRE(
+        //IsSingleShell(Mesh, numConnectedComponents) == false
+    //);
+    //REQUIRE( numConnectedComponents == 2 );
+//}
+
 TEST_CASE( "test flip", "[file_repair]" ) {
     MyMesh Mesh;
     auto filepath = meshPath+"notPositiveVolume.stl";
@@ -184,7 +202,7 @@ TEST_CASE( "test no file repair", "[file_repair]" ) {
     MyMesh mesh;
     auto filepath = meshPath+"perfect.stl";
     loadMesh(mesh, filepath);
-    int results[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    int results[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
     float boundary[6];
     file_check(mesh, results, boundary);
 
@@ -199,7 +217,7 @@ TEST_CASE( "test fix volume and coherent oriented", "[file_repair]" ) {
     MyMesh mesh;
     auto filepath = meshPath+"notCoherentlyOriented.stl";
     loadMesh(mesh, filepath);
-    int results[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    int results[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
     float boundary[6];
     file_check(mesh, results, boundary);
 
@@ -214,7 +232,7 @@ TEST_CASE( "test only fix positive volume", "[file_repair]" ) {
     MyMesh mesh;
     auto filepath = meshPath+"notPositiveVolume.stl";
     loadMesh(mesh, filepath);
-    int results[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    int results[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
     float boundary[6];
     file_check(mesh, results, boundary);
 
@@ -229,7 +247,7 @@ TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
     MyMesh mesh;
     auto filepath = meshPath+"mostly_notCoherentlyOriented.stl";
     loadMesh(mesh, filepath);
-    int results[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    int results[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
     float boundary[6];
     file_check(mesh, results, boundary);
 
@@ -238,4 +256,26 @@ TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
 
     REQUIRE(repair_record[0] == 1);
     REQUIRE(repair_record[1] == 0);
+}
+
+// for some reason there is error running test IsSingleShell function
+TEST_CASE( "test single shell", "[file_repair]" ) {
+    MyMesh mesh;
+    int results[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    float boundary[6];
+    int numConnectedComponents;
+
+    auto filepath = meshPath+"perfect.stl";
+    loadMesh(mesh, filepath);
+
+    file_check(mesh, results, boundary);
+    numConnectedComponents = results[9];
+    REQUIRE(numConnectedComponents == 1); // one shell
+
+    filepath = meshPath+"twoCubes.stl";
+    loadMesh(mesh, filepath);
+
+    file_check(mesh, results, boundary);
+    numConnectedComponents = results[9];
+    REQUIRE(numConnectedComponents == 2); // one shell
 }

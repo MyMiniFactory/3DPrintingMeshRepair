@@ -38,6 +38,7 @@ bool NoIntersectingFaces(MyMesh & mesh, int & numIntersectingFaces);
 bool IsWaterTight(MyMesh & mesh);
 bool IsCoherentlyOrientedMesh(MyMesh & mesh);
 bool IsPositiveVolume(MyMesh & mesh);
+bool IsSingleShell(MyMesh & mesh, int & numConnectedComponents);
 
 void file_check(MyMesh & m, int* results, float* boundary);
 
