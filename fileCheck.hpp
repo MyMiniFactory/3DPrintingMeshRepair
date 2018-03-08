@@ -11,6 +11,7 @@
 #include <fstream>
 #include <array>
 #include <stdio.h>
+#include <stdlib.h>
 
 class MyVertex; class MyFace;
 struct MyUsedTypes : public vcg::UsedTypes<vcg::Use<MyVertex>   ::AsVertexType,
