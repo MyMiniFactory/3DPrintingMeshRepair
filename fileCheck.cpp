@@ -42,20 +42,20 @@ bool NoIntersectingFaces(MyMesh & mesh, int & numIntersectingFaces) { // change 
 
     numIntersectingFaces = static_cast<int>(IntersectingFaces.size());
 
-    FILE * fp;
-    int counter = 1;
-    fp = fopen("./intersecting.obj", "w+");
-    for (auto const& face: IntersectingFaces) {
-        auto v0 = face->cV(0)->cP();
-        auto v1 = face->cV(1)->cP();
-        auto v2 = face->cV(2)->cP();
-        fprintf(fp, "v %f %f %f \n", v0[0], v0[1], v0[2]);
-        fprintf(fp, "v %f %f %f \n", v1[0], v1[1], v1[2]);
-        fprintf(fp, "v %f %f %f \n", v2[0], v2[1], v2[2]);
-        fprintf(fp, "f %i %i %i \n", counter, counter+1, counter+2);
-        // fprintf(fp, "\n");
-        counter += 3;
-    }
+    // FILE * fp;
+    // int counter = 1;
+    // fp = fopen("./intersecting.obj", "w+");
+    // for (auto const& face: IntersectingFaces) {
+        // auto v0 = face->cV(0)->cP();
+        // auto v1 = face->cV(1)->cP();
+        // auto v2 = face->cV(2)->cP();
+        // fprintf(fp, "v %f %f %f \n", v0[0], v0[1], v0[2]);
+        // fprintf(fp, "v %f %f %f \n", v1[0], v1[1], v1[2]);
+        // fprintf(fp, "v %f %f %f \n", v2[0], v2[1], v2[2]);
+        // fprintf(fp, "f %i %i %i \n", counter, counter+1, counter+2);
+        // // fprintf(fp, "\n");
+        // counter += 3;
+    // }
 
 
     return (numIntersectingFaces > 0) ? false : true;

@@ -374,9 +374,9 @@ bool NoDivTriTriIsect(const Point3<T> V0,const Point3<T> V1,const Point3<T> V2,
   if(isect1[1]<isect2[0] || isect2[1]<isect1[0]) return 0;
 
 
-  printf("return True\n");
-  printf("isect10 %f isect11 %f\n", isect1[0], isect1[1]);
-  printf("isect20 %f isect21 %f\n", isect2[0], isect2[1]);
+  // printf("return True\n");
+  // printf("isect10 %f isect11 %f\n", isect1[0], isect1[1]);
+  // printf("isect20 %f isect21 %f\n", isect2[0], isect2[1]);
 
   return 1;
 }

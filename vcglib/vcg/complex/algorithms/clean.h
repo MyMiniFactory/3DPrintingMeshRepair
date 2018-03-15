@@ -1671,14 +1671,14 @@ public:
 
     int sv = face::CountSharedVertex(f0,f1);
     if(sv==3) {
-        printf("3 shared vertex\n");
+        // printf("3 shared vertex\n");
         return true;
     }
     if(sv==0) {
         const bool intersect = vcg::IntersectionTriangleTriangle<FaceType>((*f0),(*f1));
         if (intersect) {
 
-            printf("0 shared vertex\n");
+            // printf("0 shared vertex\n");
         }
         return intersect;
     }
@@ -1700,10 +1700,10 @@ public:
         else {
             auto v0 = (*f0).V1(i0)->P();
             auto v1 = (*f0).V2(i0)->P();
-            printf("v1 %f %f %f\n", v0[0], v0[1], v0[2]);
-            printf("v2 %f %f %f\n", v1[0], v1[1], v1[2]);
-            printf("a %f b %f\n", a, b);
-            printf("1 shared vertex\n");
+            // printf("v1 %f %f %f\n", v0[0], v0[1], v0[2]);
+            // printf("v2 %f %f %f\n", v1[0], v1[1], v1[2]);
+            // printf("a %f b %f\n", a, b);
+            // printf("1 shared vertex\n");
             return true;
         }
       }
@@ -1717,16 +1717,16 @@ public:
         else {
             auto v0 = (*f0).V1(i0)->P();
             auto v1 = (*f0).V2(i0)->P();
-            printf("v1 %f %f %f\n", v0[0], v0[1], v0[2]);
-            printf("v2 %f %f %f\n", v1[0], v1[1], v1[2]);
+            // printf("v1 %f %f %f\n", v0[0], v0[1], v0[2]);
+            // printf("v2 %f %f %f\n", v1[0], v1[1], v1[2]);
 
             v0 = (*f0).V1(i0)->P()*0.5 + shP;
             v1 = (*f0).V2(i0)->P()*0.5 + shP;
-            printf("after v1 %f %f %f\n", v0[0], v0[1], v0[2]);
-            printf("after v2 %f %f %f\n", v1[0], v1[1], v1[2]);
+            // printf("after v1 %f %f %f\n", v0[0], v0[1], v0[2]);
+            // printf("after v2 %f %f %f\n", v1[0], v1[1], v1[2]);
 
-            printf("a %f b %f\n", a, b);
-            printf("1 shared vertex\n");
+            // printf("a %f b %f\n", a, b);
+            // printf("1 shared vertex\n");
             return true;
         }
         //if(a+b>=1 || a<=EPSIL || b<=EPSIL ) return false;
