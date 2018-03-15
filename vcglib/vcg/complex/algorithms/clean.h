@@ -1616,11 +1616,72 @@ public:
         if the faces share an edge no test is done.
         if the faces share only a vertex, the opposite edge is tested against the face
   */
+
+  static bool GoodFace(FaceType *f0) {
+
+    auto v0 = (*f0).cV(0)->cP();
+    auto v1 = (*f0).cV(1)->cP();
+    auto v2 = (*f0).cV(2)->cP();
+    // printf("v %f %f %f \n", v0[0], v0[1], v0[2]);
+    // printf("v %f %f %f \n", v1[0], v1[1], v1[2]);
+    // printf("v %f %f %f \n", v2[0], v2[1], v2[2]);
+
+    auto dv01 = Distance(v0, v1);
+    auto dv12 = Distance(v1, v2);
+    auto dv02 = Distance(v0, v2);
+
+    // printf("dist v0-v1 %f\n", dv01);
+    // printf("dist v1-v2 %f\n", dv12);
+    // printf("dist v0-v2 %f\n", dv02);
+
+    auto cross_product = (v1 - v0) ^ (v0 - v2);
+    auto zero = Point3f(0, 0, 0);
+
+    // http://mathworld.wolfram.com/Collinear.html
+    // check whether they are collinear not coplanar
+    // printf("cross result %f %f %f\n", cross_product[0], cross_product[1], cross_product[2]);
+    auto collinear = Distance(cross_product, zero);
+    if (collinear < 0.01) {
+        // printf("collinear case %f\n", collinear);
+        // printf("collinear distance %f\n", collinear);
+        return false;
+    }
+
+
+    if (dv01 < 0.01 || dv12 < 0.01 || dv02 < 0.01) { // assume mm as unit 0.01 mm is quite small
+        // printf("degen faces f0\n");
+        // printf("%f %f %f\n", dv01, dv12, dv02);
+        return false;
+    } else {
+        // printf("not degen\n");
+    }
+
+    // printf("v %f %f %f \n", v0[0], v0[1], v0[2]);
+    // printf("v %f %f %f \n", v1[0], v1[1], v1[2]);
+    // printf("v %f %f %f \n", v2[0], v2[1], v2[2]);
+    //
+    return true;
+  }
+
   static	bool TestFaceFaceIntersection(FaceType *f0,FaceType *f1)
   {
+
+    if (!GoodFace(f0) or !GoodFace(f1))
+        return false;
+
     int sv = face::CountSharedVertex(f0,f1);
-    if(sv==3) return true;
-    if(sv==0) return (vcg::IntersectionTriangleTriangle<FaceType>((*f0),(*f1)));
+    if(sv==3) {
+        printf("3 shared vertex\n");
+        return true;
+    }
+    if(sv==0) {
+        const bool intersect = vcg::IntersectionTriangleTriangle<FaceType>((*f0),(*f1));
+        if (intersect) {
+
+            printf("0 shared vertex\n");
+        }
+        return intersect;
+    }
     //  if the faces share only a vertex, the opposite edge (as a segment) is tested against the face
     //  to avoid degenerate cases where the two triangles have the opposite edge on a common plane
     //  we offset the segment to test toward the shared vertex
@@ -1629,17 +1690,47 @@ public:
       int i0,i1; ScalarType a,b;
       face::FindSharedVertex(f0,f1,i0,i1);
       CoordType shP = f0->V(i0)->P()*0.5;
-      if(vcg::IntersectionSegmentTriangle(Segment3<ScalarType>((*f0).V1(i0)->P()*0.5+shP,(*f0).V2(i0)->P()*0.5+shP), *f1, a, b) )
+      // if(vcg::IntersectionSegmentTriangle(Segment3<ScalarType>((*f0).V1(i0)->P()*0.5+shP,(*f0).V2(i0)->P()*0.5+shP), *f1, a, b) )
+      if(vcg::IntersectionSegmentTriangle(Segment3<ScalarType>((*f0).V1(i0)->P(),(*f0).V2(i0)->P()), *f1, a, b) ) // tiger: dont care about degen case since we handle it before
       {
         // a,b are the param coords of the intersection point of the segment.
-        if(a+b>=1 || a<=EPSIL || b<=EPSIL ) return false;
-        return true;
+        if(a+b>=1 || a<=EPSIL || b<=EPSIL ) {
+            return false;
+        }
+        else {
+            auto v0 = (*f0).V1(i0)->P();
+            auto v1 = (*f0).V2(i0)->P();
+            printf("v1 %f %f %f\n", v0[0], v0[1], v0[2]);
+            printf("v2 %f %f %f\n", v1[0], v1[1], v1[2]);
+            printf("a %f b %f\n", a, b);
+            printf("1 shared vertex\n");
+            return true;
+        }
       }
-      if(vcg::IntersectionSegmentTriangle(Segment3<ScalarType>((*f1).V1(i1)->P()*0.5+shP,(*f1).V2(i1)->P()*0.5+shP), *f0, a, b) )
+      // if(vcg::IntersectionSegmentTriangle(Segment3<ScalarType>((*f1).V1(i1)->P()*0.5+shP,(*f1).V2(i1)->P()*0.5+shP), *f0, a, b) )
+      if(vcg::IntersectionSegmentTriangle(Segment3<ScalarType>((*f1).V1(i1)->P(),(*f1).V2(i1)->P()), *f0, a, b) )
       {
         // a,b are the param coords of the intersection point of the segment.
-        if(a+b>=1 || a<=EPSIL || b<=EPSIL ) return false;
-        return true;
+        if(a+b>=1 || a<=EPSIL || b<=EPSIL ) {
+            return false;
+        }
+        else {
+            auto v0 = (*f0).V1(i0)->P();
+            auto v1 = (*f0).V2(i0)->P();
+            printf("v1 %f %f %f\n", v0[0], v0[1], v0[2]);
+            printf("v2 %f %f %f\n", v1[0], v1[1], v1[2]);
+
+            v0 = (*f0).V1(i0)->P()*0.5 + shP;
+            v1 = (*f0).V2(i0)->P()*0.5 + shP;
+            printf("after v1 %f %f %f\n", v0[0], v0[1], v0[2]);
+            printf("after v2 %f %f %f\n", v1[0], v1[1], v1[2]);
+
+            printf("a %f b %f\n", a, b);
+            printf("1 shared vertex\n");
+            return true;
+        }
+        //if(a+b>=1 || a<=EPSIL || b<=EPSIL ) return false;
+        //return true;
       }
 
     }

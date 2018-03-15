@@ -42,6 +42,22 @@ bool NoIntersectingFaces(MyMesh & mesh, int & numIntersectingFaces) { // change 
 
     numIntersectingFaces = static_cast<int>(IntersectingFaces.size());
 
+    FILE * fp;
+    int counter = 1;
+    fp = fopen("./intersecting.obj", "w+");
+    for (auto const& face: IntersectingFaces) {
+        auto v0 = face->cV(0)->cP();
+        auto v1 = face->cV(1)->cP();
+        auto v2 = face->cV(2)->cP();
+        fprintf(fp, "v %f %f %f \n", v0[0], v0[1], v0[2]);
+        fprintf(fp, "v %f %f %f \n", v1[0], v1[1], v1[2]);
+        fprintf(fp, "v %f %f %f \n", v2[0], v2[1], v2[2]);
+        fprintf(fp, "f %i %i %i \n", counter, counter+1, counter+2);
+        // fprintf(fp, "\n");
+        counter += 3;
+    }
+
+
     return (numIntersectingFaces > 0) ? false : true;
 }
 
@@ -78,7 +94,7 @@ void file_check(MyMesh & m, int* results, float* boundary) {
 
     results[0] = 1; // set version number
 
-    float merge_vertice = .0; // not used
+    float merge_vertice = 0.; // not used
     if (merge_vertice > 0) {
         printf("mesh vertices before merge %i\n", m.VN());
         vcg::tri::Clean<MyMesh>::MergeCloseVertex(m, merge_vertice);
@@ -115,22 +131,22 @@ void file_check(MyMesh & m, int* results, float* boundary) {
     bool isWaterTight = IsWaterTight(m);
     printf( "Is WaterTight %s \n", isWaterTight ? "True" : "False");
     results[5] = isWaterTight;
-    if (not isWaterTight) return;
+    //if (not isWaterTight) return;
 
     bool isCoherentlyOriented = IsCoherentlyOrientedMesh(m);
     printf( "Is Coherently OrientedMesh %s \n", isCoherentlyOriented ? "True" : "False");
     results[6] = isCoherentlyOriented;
-    if (not isCoherentlyOriented) return;
+    //if (not isCoherentlyOriented) return;
 
     bool isPositiveVolume = IsPositiveVolume(m);
     printf( "Is Positive Volume %s \n", isPositiveVolume ? "True" : "False");
     results[7] = isPositiveVolume;
-    if (not isPositiveVolume) return;
+    //if (not isPositiveVolume) return;
 
-    //int numIntersectingFaces;
-    //NoIntersectingFaces(m, numIntersectingFaces);
-    //printf("Number of self intersection faces %i\n", numIntersectingFaces);
-    //results[6] = numIntersectingFaces;
+    int numIntersectingFaces;
+    NoIntersectingFaces(m, numIntersectingFaces);
+    printf("Number of self intersection faces %i\n", numIntersectingFaces);
+    results[8] = numIntersectingFaces;
 
     printf("Good\n");
 
