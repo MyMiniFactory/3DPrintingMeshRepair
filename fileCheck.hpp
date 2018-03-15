@@ -11,6 +11,7 @@
 #include <fstream>
 #include <array>
 #include <stdio.h>
+#include <stdlib.h>
 
 class MyVertex; class MyFace;
 struct MyUsedTypes : public vcg::UsedTypes<vcg::Use<MyVertex>   ::AsVertexType,
@@ -38,6 +39,7 @@ bool NoIntersectingFaces(MyMesh & mesh, int & numIntersectingFaces);
 bool IsWaterTight(MyMesh & mesh);
 bool IsCoherentlyOrientedMesh(MyMesh & mesh);
 bool IsPositiveVolume(MyMesh & mesh);
+bool IsSingleShell(MyMesh & mesh, int & numConnectedComponents);
 
 void file_check(MyMesh & m, int* results, float* boundary);
 
