@@ -12,6 +12,13 @@ TEST_CASE( "test successful loadMesh", "[file_check]" ) {
     REQUIRE( is_successful == true );
 }
 
+TEST_CASE( "test successful loadMesh obj", "[file_check]" ) {
+    MyMesh mesh;
+    bool is_successful = loadMesh(mesh, meshPath+"perfect.obj");
+
+    REQUIRE( is_successful == true );
+}
+
 TEST_CASE( "test not successful loadMesh", "[file_check]" ) {
     MyMesh mesh;
     bool is_successful = loadMesh(mesh, meshPath+"notexists.stl");

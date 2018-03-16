@@ -69,9 +69,31 @@ bool IsSingleShell(MyMesh & mesh, int & numConnectedComponents) {
 bool loadMesh(MyMesh & mesh, const std::string filepath) {
 
     int a = 2; // TODO: understand what this is
-    if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(),  a))
-    {
-        printf("Error reading file  %s\n", filepath.c_str());
+
+    std::string extension;
+    extension = filepath.substr(filepath.find_last_of('.') + 1);
+    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
+    if (extension == "stl") {
+        if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(),  a))
+        {
+            printf("Error reading file  %s\n", filepath.c_str());
+            return false;
+        }
+    } else if (extension == "obj") {
+        typedef vcg::tri::io::ImporterOBJ<MyMesh> ImporterOBJ;
+
+        auto error_code = ImporterOBJ::Open(mesh, filepath.c_str(),  a);
+        auto error_message = ImporterOBJ::ErrorMsg(error_code);
+        auto error_critical = ImporterOBJ::ErrorCritical(error_code);
+
+        if (error_code!=0 && !error_critical) { // even error code critical error
+            printf("Reading file  %s with Non Critical Error %s\n", filepath.c_str(), error_message);
+        } else if (error_critical) { // odd error code critical error
+            printf("Error reading file  %s with Critical Error %s\n", filepath.c_str(), error_message);
+            return false;
+        }
+    } else {
         return false;
     }
 

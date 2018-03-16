@@ -4,6 +4,7 @@
 #include <vcg/complex/complex.h>
 #include <vcg/complex/algorithms/clean.h>
 #include <wrap/io_trimesh/import_stl.h>
+#include <wrap/io_trimesh/import_obj.h>
 #include <wrap/io_trimesh/export_stl.h>
 #include <vcg/complex/algorithms/inertia.h>
 #include <iostream>
