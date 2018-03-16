@@ -245,6 +245,7 @@ template<class T>
 bool NoDivTriTriIsect(const Point3<T> V0,const Point3<T> V1,const Point3<T> V2,
                       const Point3<T> U0,const Point3<T> U1,const Point3<T> U2)
 {
+  // printf("------------------------------\n");
   Point3<T> E1,E2;
   Point3<T> N1,N2;
 	T d1,d2;
@@ -271,13 +272,16 @@ bool NoDivTriTriIsect(const Point3<T> V0,const Point3<T> V1,const Point3<T> V2,
   du2=DOT(N1,U2)+d1;
 
   /* coplanarity robustness check */
-#ifdef USE_TRI_TRI_INT_EPSILON_TEST
+
+  // tiger: use robustness check by default
   if(FABS(du0)<TRI_TRI_INT_EPSILON) du0=0.0;
   if(FABS(du1)<TRI_TRI_INT_EPSILON) du1=0.0;
   if(FABS(du2)<TRI_TRI_INT_EPSILON) du2=0.0;
-#endif
+
   du0du1=du0*du1;
   du0du2=du0*du2;
+
+  // printf("signed distance %f %f %f\n", du0, du1, du2);
 
   if(du0du1>0.0f && du0du2>0.0f) /* same sign on all of them + not equal 0 ? */
     return 0;                    /* no intersection occurs */
@@ -294,14 +298,15 @@ bool NoDivTriTriIsect(const Point3<T> V0,const Point3<T> V1,const Point3<T> V2,
   dv1=DOT(N2,V1)+d2;
   dv2=DOT(N2,V2)+d2;
 
-#ifdef USE_TRI_TRI_INT_EPSILON_TEST
+  // tiger: use robustness check by default
   if(FABS(dv0)<TRI_TRI_INT_EPSILON) dv0=0.0;
   if(FABS(dv1)<TRI_TRI_INT_EPSILON) dv1=0.0;
   if(FABS(dv2)<TRI_TRI_INT_EPSILON) dv2=0.0;
-#endif
 
   dv0dv1=dv0*dv1;
   dv0dv2=dv0*dv2;
+
+  // printf("signed distance %f %f %f\n", dv0, dv1, dv2);
 
   if(dv0dv1>0.0f && dv0dv2>0.0f) /* same sign on all of them + not equal 0 ? */
     return 0;                    /* no intersection occurs */
@@ -350,7 +355,29 @@ bool NoDivTriTriIsect(const Point3<T> V0,const Point3<T> V1,const Point3<T> V2,
   SORT(isect1[0],isect1[1]);
   SORT(isect2[0],isect2[1]);
 
+  if (
+        (isect1[0] < TRI_TRI_INT_EPSILON and isect1[1] < TRI_TRI_INT_EPSILON) or
+        (isect2[0] < TRI_TRI_INT_EPSILON and isect2[1] < TRI_TRI_INT_EPSILON)
+  ) { // tiger one of the intersecting interval is 0 length
+      // consider this as no intersect
+      return 0;
+  }
+
+  if (
+        FABS(isect1[0] - isect1[1]) < TRI_TRI_INT_EPSILON or
+        FABS(isect2[0] - isect2[1]) < TRI_TRI_INT_EPSILON
+  ) { // tiger the interval's begin and end are the same.
+      // consider this as no intersect
+      return 0;
+  }
+
   if(isect1[1]<isect2[0] || isect2[1]<isect1[0]) return 0;
+
+
+  // printf("return True\n");
+  // printf("isect10 %f isect11 %f\n", isect1[0], isect1[1]);
+  // printf("isect20 %f isect21 %f\n", isect2[0], isect2[1]);
+
   return 1;
 }
 
@@ -466,6 +493,7 @@ bool tri_tri_intersect_with_isectline(	Point3<T> V0,Point3<T> V1,Point3<T> V2,
 										Point3<T> U0,Point3<T> U1,Point3<T> U2,bool &coplanar,
 										Point3<T> &isectpt1,Point3<T> &isectpt2)
 {
+    // printf("this is called\n");
   Point3<T> E1,E2;
   Point3<T> N1,N2;
   T d1,d2;
