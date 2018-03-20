@@ -206,70 +206,74 @@ TEST_CASE( "test not MakeCoherentlyOriented", "[file_repair]" ) {
 
 
 TEST_CASE( "test no file repair", "[file_repair]" ) {
+    int results[11] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+    float boundary[6];
+    int repair_record[3] = {-1, -1, -1};
+
+    std::cout << " test no file repair" << std::endl;
     MyMesh mesh;
     auto filepath = meshPath+"perfect.stl";
     loadMesh(mesh, filepath);
-    int results[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
-    float boundary[6];
     file_check(mesh, results, boundary);
-
-    int repair_record[2] = {-1, -1};
     file_repair(mesh, results, repair_record);
 
     REQUIRE(repair_record[0] == 0);
     REQUIRE(repair_record[1] == 0);
+    REQUIRE(repair_record[3] == 0);
+    std::cout << " test file repair finish" << std::endl;
 }
 
 TEST_CASE( "test fix volume and coherent oriented", "[file_repair]" ) {
+    int results[11] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+    float boundary[6];
+    int repair_record[3] = {-1, -1, -1};
     MyMesh mesh;
     auto filepath = meshPath+"notCoherentlyOriented.stl";
     loadMesh(mesh, filepath);
-    int results[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
-    float boundary[6];
     file_check(mesh, results, boundary);
-
-    int repair_record[2] = {-1, -1};
     file_repair(mesh, results, repair_record);
 
     REQUIRE(repair_record[0] == 1);
     REQUIRE(repair_record[1] == 1);
+    REQUIRE(repair_record[3] == 0);
 }
 
 TEST_CASE( "test only fix positive volume", "[file_repair]" ) {
+    int results[11] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+    float boundary[6];
+    int repair_record[3] = {-1, -1, -1};
     MyMesh mesh;
     auto filepath = meshPath+"notPositiveVolume.stl";
     loadMesh(mesh, filepath);
-    int results[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
-    float boundary[6];
     file_check(mesh, results, boundary);
-
-    int repair_record[2] = {-1, -1};
     file_repair(mesh, results, repair_record);
 
     REQUIRE(repair_record[0] == 0);
     REQUIRE(repair_record[1] == 1);
+    REQUIRE(repair_record[3] == 0);
 }
 
 TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
+    int results[11] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+    float boundary[6];
+    int repair_record[3] = {-1, -1, -1};
     MyMesh mesh;
     auto filepath = meshPath+"mostly_notCoherentlyOriented.stl";
     loadMesh(mesh, filepath);
-    int results[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
-    float boundary[6];
     file_check(mesh, results, boundary);
-
-    int repair_record[2] = {-1, -1};
     file_repair(mesh, results, repair_record);
 
     REQUIRE(repair_record[0] == 1);
     REQUIRE(repair_record[1] == 0);
+    REQUIRE(repair_record[3] == 0);
 }
 
 // for some reason there is error running test IsSingleShell function
 TEST_CASE( "test single shell", "[file_repair]" ) {
-    MyMesh mesh;
-    int results[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    int results[11] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     float boundary[6];
+    int repair_record[3] = {-1, -1, -1};
+    MyMesh mesh;
     int numConnectedComponents;
 
     auto filepath = meshPath+"perfect.stl";
@@ -285,4 +289,49 @@ TEST_CASE( "test single shell", "[file_repair]" ) {
     file_check(mesh, results, boundary);
     numConnectedComponents = results[9];
     REQUIRE(numConnectedComponents == 2); // one shell
+}
+
+TEST_CASE( "test fix hole function", "[file_repair]" ) {
+    int results[11] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+    float boundary[6];
+    int repair_record[3] = {-1, -1, -1};
+    MyMesh mesh;
+    auto filepath = meshPath+"2_missing_faces.stl";
+    loadMesh(mesh, filepath);
+    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
+    REQUIRE( IsWaterTight(mesh) == false );
+
+    CountHoles(mesh, true);
+    auto repaired_path = meshPath+"out/repaired.stl";
+    vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+    MyMesh repaired_mesh;
+    loadMesh(repaired_mesh, repaired_path);
+    REQUIRE( IsWaterTight(repaired_mesh) == true );
+}
+
+TEST_CASE( "test repair for hole", "[file_repair]" ) {
+    int results[11] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+    float boundary[6];
+    int repair_record[3] = {-1, -1, -1};
+
+    std::cout << "repaired record " << repair_record[0] << repair_record[1] << repair_record[2] << std::endl;
+
+    MyMesh mesh;
+    auto filepath = meshPath+"2_missing_faces.stl";
+    auto repaired_path = meshPath+"out/repaired.stl";
+
+    loadMesh(mesh, filepath);
+    file_check(mesh, results, boundary);
+    file_repair(mesh, results, repair_record);
+    REQUIRE(repair_record[0] == 0); // ?
+    REQUIRE(repair_record[1] == 0);
+    REQUIRE(repair_record[3] == 1);
+
+    vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+
+    vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+    MyMesh repaired_mesh;
+    loadMesh(repaired_mesh, repaired_path);
+    REQUIRE( IsWaterTight(repaired_mesh) == true );
+    std::cout << "where 1??\n";
 }

@@ -68,6 +68,7 @@ bool DoesFlipNormalOutside(MyMesh & mesh,
         bool isWaterTight, bool isCoherentlyOriented, bool isPositiveVolume);
 bool DoesMakeCoherentlyOriented(MyMesh & mesh,
         bool isWaterTight, bool isCoherentlyOriented);
+int CountHoles(MyMesh & m, bool repair=true);
 
 int file_repair(MyMesh & mesh, int* results, int* repair_record);
 

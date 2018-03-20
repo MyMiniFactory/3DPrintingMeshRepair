@@ -81,7 +81,7 @@ bool IsSingleShell(MyMesh & mesh, int & numConnectedComponents) {
     return (numConnectedComponents == 1) ? true : false;
 }
 
-static int CountHoles(MyMesh & m)
+int CountHoles(MyMesh & m, bool repair)
 {
     vcg::tri::UpdateFlags<MyMesh>::FaceClearV(m);
     std::vector<std::vector<vcg::Point3<float>>> vpss;
@@ -244,7 +244,7 @@ bool loadMesh(MyMesh & mesh, const std::string filepath) {
 
 void file_check(MyMesh & m, int* results, float* boundary) {
 
-    results[0] = 2; // set version number
+    results[0] = 3; // set version number
 
     int numDegeneratedFaces;
     bool RemoveDegenerateFace = NoDegenratedFaces(m, numDegeneratedFaces);
@@ -272,6 +272,7 @@ void file_check(MyMesh & m, int* results, float* boundary) {
     printf( "zmin %f zmax %f \n", boundary[4], boundary[5]);
 
     vcg::tri::UpdateTopology<MyMesh>::FaceFace(m); // require for isWaterTight
+    printf( "Update topology \n");
 
     bool isWaterTight = IsWaterTight(m);
     printf( "Is WaterTight %s \n", isWaterTight ? "True" : "False");
@@ -296,13 +297,20 @@ void file_check(MyMesh & m, int* results, float* boundary) {
     IsSingleShell(m, numConnectedComponents);
     printf("number of connected components %i\n", numConnectedComponents);
     results[9] = numConnectedComponents;
-    printf("Good\n");
+
+
+    int num_holes;
+    num_holes = CountHoles(m, true); // repair true -> try to repair the holes
+    printf("number of holes %i\n", num_holes);
+    results[10] = num_holes;
 
     return;
 }
 
 int file_repair(MyMesh & mesh, int* results, int* repair_record) {
-    assert(results[0] == 2); // version number needs to be 1
+    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for after fixing hole
+
+    assert(results[0] == 3); // version number needs to be 1
 
     printf("----------------- file repair-------------------\n");
 
@@ -318,16 +326,6 @@ int file_repair(MyMesh & mesh, int* results, int* repair_record) {
     }
 
     bool isWaterTight = results[5] == 1 ? true: false;
-
-    if (not isWaterTight) {
-        printf("is not watertight don't know how to repair\n");
-
-        // const int number_holes = vcg::tri::Clean<MyMesh>::CountHoles(mesh);
-        const int number_holes = CountHoles(mesh);
-        printf("number of holes %i \n", number_holes);
-
-        return 1;
-    }
 
     bool isCoherentlyOriented = results[6] == 1 ? true: false;
 
@@ -347,10 +345,24 @@ int file_repair(MyMesh & mesh, int* results, int* repair_record) {
     if (doesFlipNormalOutside)
         printf("flip normal outsite\n");
 
+    repair_record[2] = 0;
+
+    const int num_holes = results[10];
+    if (num_holes > 0) { // repair run always?
+        printf("Assume hole repair is runned");
+        repair_record[3] = 1;
+    } else {
+        printf("Assume hole repair is not runned");
+        repair_record[3] = 0;
+    }
+
     return 0;
 }
 
 void output_report(FILE* report, int* results, float* boundary, int* repair_record) {
+
+    assert(results[0] == 3);
+
     std::fprintf(report, "%d num_version\n",                     results[0]);
     std::fprintf(report, "%d num_face\n",                        results[1]);
     std::fprintf(report, "%d num_vertices\n",                    results[2]);
@@ -361,6 +373,7 @@ void output_report(FILE* report, int* results, float* boundary, int* repair_reco
     std::fprintf(report, "%d is_positive_volume\n",              results[7]);
     std::fprintf(report, "%d num_intersecting_faces\n",          results[8]);
     std::fprintf(report, "%d num_shells\n",                      results[9]);
+    std::fprintf(report, "%d num_holes\n",                       results[10]);
     std::fprintf(report, "%f min_x\n",                          boundary[0]);
     std::fprintf(report, "%f max_x\n",                          boundary[1]);
     std::fprintf(report, "%f min_y\n",                          boundary[2]);
@@ -370,6 +383,7 @@ void output_report(FILE* report, int* results, float* boundary, int* repair_reco
     std::fprintf(report, "%d does_make_coherent_orient\n", repair_record[0]);
     std::fprintf(report, "%d does_flip_normal_outside\n",  repair_record[1]);
     std::fprintf(report, "%d does_union\n",                repair_record[2]);
+    std::fprintf(report, "%d does_hole_fix\n",             repair_record[3]);
 }
 
 void file_repair_complex(const std::string repaired_path, MyMesh & mesh,
@@ -520,7 +534,7 @@ int main( int argc, char *argv[] )
     }
 
     printf("----------------- file check -------------------\n");
-    int results[10] = {
+    int results[11] = {
         -1, // 0 version number
         -1, // 1 face number
         -1, // 2 vertices number
@@ -530,7 +544,8 @@ int main( int argc, char *argv[] )
         -1, // 6 is coherently oriented
         -1, // 7 is positive volume
         -1, // 8 number of intersecting faces
-        -1  // 9 number of connected components
+        -1, // 9 number of connected components
+        -1  //10 number of holes
     };
 
     float boundary[6] = {-1, -1, -1, -1, -1, -1};
@@ -542,11 +557,13 @@ int main( int argc, char *argv[] )
     }
     file_check(mesh, results, boundary);
 
-    int repair_record[3] = {
+    int repair_record[4] = {
         -1, // fix CoherentlyOriented
         -1, // fix not Positive Volume
-        -1  // attempt to fix the union, require human check
+        -1, // attempt to fix the union, require human check
+        -1  // attempt to fix hole
     };
+
     file_repair(mesh, results, repair_record);
 
     if (not repaired_path.empty())
@@ -561,7 +578,7 @@ int main( int argc, char *argv[] )
     }
 
 
-    assert(results[0] == 2); // make sure the version is 1
+    assert(results[0] == 3);
 
     if (report_path.empty()) {
         std::printf("report_path is not provided, write to stdout\n");
