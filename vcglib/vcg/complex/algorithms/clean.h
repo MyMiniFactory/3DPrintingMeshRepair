@@ -1022,9 +1022,7 @@ public:
     } // end for
   }
 
-
-
-  static int CountHoles( MeshType & m)
+static int CountHoles( MeshType & m)
   {
     UpdateFlags<MeshType>::FaceClearV(m);
     int loopNum=0;
@@ -1047,8 +1045,7 @@ public:
         }
     }
     return loopNum;
-  }
-
+}
   /*
   Compute the set of connected components of a given mesh
   it fills a vector of pair < int , faceptr > with, for each connecteed component its size and a represnant

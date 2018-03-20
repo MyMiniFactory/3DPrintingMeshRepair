@@ -29,27 +29,29 @@
 #include<vcg/complex/algorithms/smooth.h>
 #include<vcg/complex/algorithms/refine.h>
 
+#include <fileCheck.hpp>
+
 // input output
-#include <wrap/io_trimesh/import_ply.h>
-#include <wrap/io_trimesh/export_ply.h>
+#include <wrap/io_trimesh/import_stl.h>
+#include <wrap/io_trimesh/export_stl.h>
 
 using namespace vcg;
 using namespace std;
 
-class MyFace;
-class MyVertex;
-struct MyUsedTypes : public UsedTypes<	Use<MyVertex>		::AsVertexType,
-    Use<MyFace>			::AsFaceType>{};
+class _MyFace;
+class _MyVertex;
+struct _MyUsedTypes : public UsedTypes<	Use<_MyVertex>		::AsVertexType,
+    Use<_MyFace>			::AsFaceType>{};
 
-class MyVertex  : public Vertex< MyUsedTypes, vertex::Coord3f, vertex::BitFlags, vertex::Normal3f, vertex::Mark, vertex::Color4b >{};
-class MyFace    : public Face  < MyUsedTypes, face::VertexRef,face::FFAdj, face::Mark, face::BitFlags, face::Normal3f> {};
+class _MyVertex  : public Vertex< _MyUsedTypes, vertex::Coord3f, vertex::BitFlags, vertex::Normal3f, vertex::Mark, vertex::Color4b >{};
+class _MyFace    : public Face  < _MyUsedTypes, face::VertexRef,face::FFAdj, face::Mark, face::BitFlags, face::Normal3f> {};
 
-class MyMesh : public tri::TriMesh< vector<MyVertex>, vector<MyFace > >{};
+class _MyMesh : public tri::TriMesh< vector<_MyVertex>, vector<_MyFace > >{};
 
 //Delaunay
-class MyDelaunayFlip: public vcg::tri::TriEdgeFlip< MyMesh, MyDelaunayFlip > {
+class MyDelaunayFlip: public vcg::tri::TriEdgeFlip< _MyMesh, MyDelaunayFlip > {
 public:
-    typedef  vcg::tri::TriEdgeFlip< MyMesh,  MyDelaunayFlip > TEF;
+    typedef  vcg::tri::TriEdgeFlip< _MyMesh,  MyDelaunayFlip > TEF;
     inline MyDelaunayFlip(  const TEF::PosType &p, int i,BaseParameterClass *pp) :TEF(p,i,pp){}
 };
 
@@ -76,6 +78,17 @@ bool NormalTest(typename face::Pos<typename MESH::FaceType> pos)
     return true;
 }
 
+bool loadMesh(_MyMesh & mesh, const std::string filepath) {
+    int a = 2; // TODO: understand what this is
+        if(vcg::tri::io::ImporterSTL<_MyMesh>::Open(mesh, filepath.c_str(),  a))
+        {
+                printf("Error reading file  %s\n", filepath.c_str());
+                return false;
+            }
+    bool RemoveDegenerateFlag=false;
+        vcg::tri::Clean<_MyMesh>::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag);
+}
+
 int main(int argc,char ** argv){
 
     if(argc<5)
@@ -83,7 +96,7 @@ int main(int argc,char ** argv){
         printf(
             "\n     HoleFilling (" __DATE__ ")\n"
             "Visual Computing Group I.S.T.I. C.N.R.\n"
-      "Usage: trimesh_hole #algorithm #size filein.ply fileout.ply \n"
+      "Usage: trimesh_hole #algorithm #size filein.stl fileout.stl \n"
             "#algorithm: \n"
             " 1) Trivial Ear \n"
             " 2) Minimum weight Ear \n"
@@ -101,25 +114,28 @@ int main(int argc,char ** argv){
         exit(0);
     }
 
-    MyMesh m;
+    _MyMesh m;
 
-    if(tri::io::ImporterPLY<MyMesh>::Open(m,argv[3])!=0)
-    {
-        printf("Error reading file  %s\n",argv[2]);
-        exit(0);
-    }
+    int loadMask = 0;
+    //if(tri::io::ImporterSTL<_MyMesh>::Open(m,argv[3], loadMask)!=0)
+    //{
+        //printf("Error reading file  %s\n",argv[2]);
+        //exit(0);
+    //}
+
+    loadMesh(m, argv[3]);
 
     //update the face-face topology
-    tri::UpdateTopology<MyMesh>::FaceFace(m);
-    tri::UpdateNormal<MyMesh>::PerVertexPerFace(m);
-    tri::UpdateFlags<MyMesh>::FaceBorderFromFF(m);
-  assert(tri::Clean<MyMesh>::IsFFAdjacencyConsistent(m));
+    tri::UpdateTopology<_MyMesh>::FaceFace(m);
+    tri::UpdateNormal<_MyMesh>::PerVertexPerFace(m);
+    tri::UpdateFlags<_MyMesh>::FaceBorderFromFF(m);
+  assert(tri::Clean<_MyMesh>::IsFFAdjacencyConsistent(m));
 
     //compute the average of face area
     float AVG,sumA=0.0f;
     int numA=0,indice;
     indice = m.face.size();
-    MyMesh::FaceIterator fi;
+    _MyMesh::FaceIterator fi;
     for(fi=m.face.begin();fi!=m.face.end();++fi)
     {
             sumA += DoubleArea(*fi)/2;
@@ -129,25 +145,25 @@ int main(int argc,char ** argv){
     }
     AVG=sumA/numA;
 
-  //tri::Hole<MyMesh> holeFiller;
+  //tri::Hole<_MyMesh> holeFiller;
     switch(algorithm)
     {
-  case 1:			tri::Hole<MyMesh>::EarCuttingFill<tri::TrivialEar<MyMesh> >(m,holeSize,false);                	        break;
-  case 2:   	tri::Hole<MyMesh>::EarCuttingFill<tri::MinimumWeightEar< MyMesh> >(m,holeSize,false,callback);          break;
-  case 3: 		tri::Hole<MyMesh>::EarCuttingIntersectionFill<tri::SelfIntersectionEar< MyMesh> >(m,holeSize,false);		break;
-  case 4: 		tri::Hole<MyMesh>::MinimumWeightFill(m,holeSize, false); tri::UpdateTopology<MyMesh>::FaceFace(m);      break;
+  case 1:			tri::Hole<_MyMesh>::EarCuttingFill<tri::TrivialEar<_MyMesh> >(m,holeSize,false);                	        break;
+  case 2:   	tri::Hole<_MyMesh>::EarCuttingFill<tri::MinimumWeightEar< _MyMesh> >(m,holeSize,false,callback);          break;
+  case 3: 		tri::Hole<_MyMesh>::EarCuttingIntersectionFill<tri::SelfIntersectionEar< _MyMesh> >(m,holeSize,false);		break;
+  case 4: 		tri::Hole<_MyMesh>::MinimumWeightFill(m,holeSize, false); tri::UpdateTopology<_MyMesh>::FaceFace(m);      break;
     }
 
-    tri::UpdateFlags<MyMesh>::FaceBorderFromFF(m);
+    tri::UpdateFlags<_MyMesh>::FaceBorderFromFF(m);
 
-  assert(tri::Clean<MyMesh>::IsFFAdjacencyConsistent(m));
+  assert(tri::Clean<_MyMesh>::IsFFAdjacencyConsistent(m));
 
   printf("\nStart refinig...\n");
 
 /*start refining */
-    MyMesh::VertexIterator vi;
-    MyMesh::FaceIterator f;
-    std::vector<MyMesh::FacePointer> vf;
+    _MyMesh::VertexIterator vi;
+    _MyMesh::FaceIterator f;
+    std::vector<_MyMesh::FacePointer> vf;
     f =  m.face.begin();
     f += indice;
     for(; f != m.face.end();++f)
@@ -158,9 +174,9 @@ int main(int argc,char ** argv){
         }
     }
 
-    std::vector<MyMesh::FacePointer *> FPP;
-    std::vector<MyMesh::FacePointer> added;
-    std::vector<MyMesh::FacePointer>::iterator vfit;
+    std::vector<_MyMesh::FacePointer *> FPP;
+    std::vector<_MyMesh::FacePointer> added;
+    std::vector<_MyMesh::FacePointer>::iterator vfit;
     int i=1;
     printf("\n");
 
@@ -180,7 +196,7 @@ int main(int argc,char ** argv){
         }
     }
     BaseParameterClass pp;
-                vcg::LocalOptimization<MyMesh> Fs(m,&pp);
+                vcg::LocalOptimization<_MyMesh> Fs(m,&pp);
                 Fs.SetTargetMetric(0.0f);
                 Fs.Init<MyDelaunayFlip >();
                 Fs.DoOptimization();
@@ -198,7 +214,7 @@ int main(int argc,char ** argv){
                 bool test= true;
                 for(int ind =0;ind<3;++ind)
                     f->V(ind)->InitIMark();
-                test = (DoubleArea<MyMesh::FaceType>(*f)/2) > AVG;
+                test = (DoubleArea<_MyMesh::FaceType>(*f)/2) > AVG;
                 if(test)
                 {
                     vf.push_back(&(*f));
@@ -218,10 +234,10 @@ int main(int argc,char ** argv){
             FPP.push_back(&(*vfit));
         }
         int toadd= vf.size();
-        MyMesh::FaceIterator f1,f2;
-        f2 = tri::Allocator<MyMesh>::AddFaces(m,(toadd*2),FPP);
-        MyMesh::VertexIterator vertp = tri::Allocator<MyMesh>::AddVertices(m,toadd);
-        std::vector<MyMesh::FacePointer> added;
+        _MyMesh::FaceIterator f1,f2;
+        f2 = tri::Allocator<_MyMesh>::AddFaces(m,(toadd*2),FPP);
+        _MyMesh::VertexIterator vertp = tri::Allocator<_MyMesh>::AddVertices(m,toadd);
+        std::vector<_MyMesh::FacePointer> added;
         added.reserve(toadd);
         vfit=vf.begin();
 
@@ -229,7 +245,7 @@ int main(int argc,char ** argv){
         {
             f1=f2;
             f2++;
-            TriSplit<MyMesh,CenterPointBarycenter<MyMesh> >::Apply(vf[i],&(*f1),&(*f2),&(*vertp),CenterPointBarycenter<MyMesh>() );
+            TriSplit<_MyMesh,CenterPointBarycenter<_MyMesh> >::Apply(vf[i],&(*f1),&(*f2),&(*vertp),CenterPointBarycenter<_MyMesh>() );
             f1->SetS();
             f2->SetS();
             for(int itr=0;itr<3;itr++)
@@ -242,23 +258,23 @@ int main(int argc,char ** argv){
         }
 
         BaseParameterClass pp;
-        vcg::LocalOptimization<MyMesh> FlippingSession(m,&pp);
+        vcg::LocalOptimization<_MyMesh> FlippingSession(m,&pp);
         FlippingSession.SetTargetMetric(0.0f);
         FlippingSession.Init<MyDelaunayFlip >();
         FlippingSession.DoOptimization();
 
     }while(!vf.empty());
 
-    vcg::LocalOptimization<MyMesh> Fiss(m,&pp);
+    vcg::LocalOptimization<_MyMesh> Fiss(m,&pp);
     Fiss.SetTargetMetric(0.0f);
     Fiss.Init<MyDelaunayFlip >();
     Fiss.DoOptimization();
 
 /*end refining */
 
-    tri::io::ExporterPLY<MyMesh>::Save(m,"PreSmooth.ply",false);
+    tri::io::ExporterSTL<_MyMesh>::Save(m,"PreSmooth.stl",false);
 
-    int UBIT = MyMesh::VertexType::NewBitFlag();
+    int UBIT = _MyMesh::VertexType::NewBitFlag();
     f =  m.face.begin();
     f += indice;
     for(; f != m.face.end();++f)
@@ -266,7 +282,7 @@ int main(int argc,char ** argv){
         if(f->IsS())
         {
             for(int ind =0;ind<3;++ind){
-                if(NormalTest<MyMesh>(face::Pos<MyMesh::FaceType>(&(*f),ind )))
+                if(NormalTest<_MyMesh>(face::Pos<_MyMesh::FaceType>(&(*f),ind )))
                 {
                     f->V(ind)->SetUserBit(UBIT);
                 }
@@ -284,11 +300,11 @@ int main(int argc,char ** argv){
         }
     }
 
-    tri::Smooth<MyMesh>::VertexCoordLaplacian(m,1,true);
+    tri::Smooth<_MyMesh>::VertexCoordLaplacian(m,1,true);
 
     printf("\nCompleted. Saving....\n");
 
-  tri::io::ExporterPLY<MyMesh>::Save(m,argv[4],false);
+  tri::io::ExporterSTL<_MyMesh>::Save(m,argv[4],false);
     return 0;
 }
 

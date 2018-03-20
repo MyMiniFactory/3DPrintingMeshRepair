@@ -1,12 +1,21 @@
 #ifndef FILECHECK_HPP
 #define FILECHECK_HPP
 
+// #include <vcg/complex/complex.h>
+// #include <vcg/complex/algorithms/closest.h>
+// #include <vcg/space/index/grid_static_ptr.h>
+// #include <vcg/space/index/spatial_hashing.h>
+// #include <vcg/complex/algorithms/update/normal.h>
+#include <vcg/space/triangle3.h>
+
 #include <vcg/complex/complex.h>
 #include <vcg/complex/algorithms/clean.h>
 #include <wrap/io_trimesh/import_stl.h>
 #include <wrap/io_trimesh/import_obj.h>
 #include <wrap/io_trimesh/export_stl.h>
 #include <vcg/complex/algorithms/inertia.h>
+#include <vcg/complex/algorithms/hole.h>
+
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -14,9 +23,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-class MyVertex; class MyFace;
+class MyVertex; class MyFace; class MyEdge;
 struct MyUsedTypes : public vcg::UsedTypes<vcg::Use<MyVertex>   ::AsVertexType,
-                            vcg::Use<MyFace>     ::AsFaceType>{};
+                            vcg::Use<MyFace>     ::AsFaceType,
+                            vcg::Use<MyEdge>     ::AsEdgeType>{};
+
 class MyVertex  : public vcg::Vertex< MyUsedTypes,
     vcg::vertex::Coord3f,
     vcg::vertex::Normal3f,
@@ -29,7 +40,12 @@ class MyFace    : public vcg::Face< MyUsedTypes,
     vcg::face::VertexRef,
     vcg::face::Mark,
     vcg::face::BitFlags > {};
-class MyMesh    : public vcg::tri::TriMesh< std::vector<MyVertex>, std::vector<MyFace> > {};
+
+class MyEdge: public vcg::Edge< MyUsedTypes,
+    vcg::edge::VertexRef > {};
+
+class MyMesh    : public vcg::tri::TriMesh< std::vector<MyVertex>, std::vector<MyFace> , std::vector<MyEdge> > {};
+
 
 bool loadMesh(MyMesh & mesh, const std::string filepath);
 
