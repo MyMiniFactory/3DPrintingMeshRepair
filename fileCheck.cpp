@@ -89,49 +89,45 @@ int CountHoles(MyMesh & m, bool repair)
     int loopNum=0;
     for(auto fi=m.face.begin(); fi!=m.face.end();++fi) if(!fi->IsD())
     {
-        // printf("Face Index %li\n", std::distance(m.face.begin(), fi));
         for(int j=0;j<3;++j)
         {
             if(!fi->IsV() && vcg::face::IsBorder(*fi,j))
             {
                 vcg::face::Pos<MyFace> startPos(&*fi,j);
                 vcg::face::Pos<MyFace> curPos=startPos;
-                printf("------------- hole %i --------------- \n", loopNum);
 
                 std::vector<vcg::Point3<float>> vps;
+
                 do
                 {
+                    auto curFace = curPos.F();
                     curPos.NextB();
                     curPos.F()->SetV();
                     auto face = curPos.F();
-                    //printf("---select faces %i\n", loopNum);
-                    //printf("---edge index%i\n", curPos.E());
+                    if ( // check face two-manfold overwise it will throw assert error at curPos.NextB()
+                            face->FFp(0)->FFp(face->FFi(0))!=&*face or
+                            face->FFp(1)->FFp(face->FFi(1))!=&*face or
+                            face->FFp(2)->FFp(face->FFi(2))!=&*face
+                       ) {
+                        fi->SetV();
+                        vcg::tri::Allocator<MyMesh>::DeleteFace(m,*fi);
+                        break;
 
+                    }
                     auto v0 = face->cV(0)->cP();
                     auto v1 = face->cV(1)->cP();
                     auto v2 = face->cV(2)->cP();
-                    //printf("v %f %f %f \n", v0[0], v0[1], v0[2]);
-                    //printf("v %f %f %f \n", v1[0], v1[1], v1[2]);
-                    //printf("v %f %f %f \n", v2[0], v2[1], v2[2]);
 
                     auto edgeIndex = curPos.E();
 
                     if (edgeIndex == 0) {
-                        printf("v %f %f %f ", v0[0], v0[1], v0[2]);
-                        printf("v %f %f %f\n", v1[0], v1[1], v1[2]);
                         vps.push_back(face->cV(0)->cP());
                         vps.push_back(face->cV(1)->cP());
-                        MyMesh::VertexPointer vpp = face->V(0);
                     } else if (edgeIndex == 1) {
-
-                        printf("v %f %f %f ", v1[0], v1[1], v1[2]);
-                        printf("v %f %f %f\n", v2[0], v2[1], v2[2]);
                         vps.push_back(face->cV(1)->cP());
                         vps.push_back(face->cV(2)->cP());
                     } else {
                         assert(edgeIndex == 2);
-                        printf("v %f %f %f ", v2[0], v2[1], v2[2]);
-                        printf("v %f %f %f\n", v0[0], v0[1], v0[2]);
                         vps.push_back(face->cV(2)->cP());
                         vps.push_back(face->cV(0)->cP());
                     }
@@ -139,48 +135,12 @@ int CountHoles(MyMesh & m, bool repair)
                 }
                 while(curPos!=startPos);
                 vpss.push_back(vps);
-
-                /*
-                printf("size of edges in hole %d\n", vp.size());
-                // attempt to repair holes
-                if (vp.size() == 6) { // trivial case just need to add a triangle
-                    vcg::tri::Allocator<MyMesh>::AddFace(m, vp[1], vp[0], vp[2]);
-                    printf("---added face no core dump %d\n", vp.size());
-                } else if (vp.size() > 6) {
-
-                    const int num_edges = vp.size()/2;
-
-                    vcg::Point3<float> center(0, 0, 0);
-                    for (auto& n : vp)
-                        center += n;
-                    center[0] /= vp.size();
-                    center[1] /= vp.size();
-                    center[2] /= vp.size();
-
-                    for (int count=0;count<num_edges;count++) {
-                        vcg::tri::Allocator<MyMesh>::AddFace(m, vp[count*2 + 1], vp[count*2], center);
-                        std::cout<<"add faces"<<std::endl;
-                    }
-
-                    // std::cout<<center[0]<<std::endl;
-                    // std::cout<<center[1]<<std::endl;
-                    // std::cout<<center[2]<<std::endl;
-                }
-                return loopNum;
-                */
                 ++loopNum;
             }
         }
     }
 
     for (auto& vps : vpss) {
-        std::cout << "length of vps " <<vps.size() << std::endl;
-           printf("size of edges in hole %d\n", vps.size());
-        // attempt to repair holes
-        // if (vps.size() == 6) { // trivial case just need to add a triangle
-            // vcg::tri::Allocator<MyMesh>::AddFace(m, vps[1], vps[0], vps[2]);
-            // printf("---added face no core dump %d\n", vps.size());
-        // } else 
         if (vps.size() >= 6) {
 
             const int num_edges = vps.size()/2;
@@ -197,10 +157,6 @@ int CountHoles(MyMesh & m, bool repair)
                 std::cout<<"add faces"<<std::endl;
             }
         }
-
-        // std::cout<<center[0]<<std::endl;
-        // std::cout<<center[1]<<std::endl;
-        // std::cout<<center[2]<<std::endl;
     }
     return loopNum;
 }
@@ -244,7 +200,7 @@ bool loadMesh(MyMesh & mesh, const std::string filepath) {
 
 void file_check(MyMesh & m, int* results, float* boundary) {
 
-    results[0] = 3; // set version number
+    results[0] = 4; // set version number
 
     int numDegeneratedFaces;
     bool RemoveDegenerateFace = NoDegenratedFaces(m, numDegeneratedFaces);
@@ -298,19 +254,30 @@ void file_check(MyMesh & m, int* results, float* boundary) {
     printf("number of connected components %i\n", numConnectedComponents);
     results[9] = numConnectedComponents;
 
+    // non manifold edges in a mesh, e.g. the edges where there are more than 2 incident faces
+    int numNonManifoldEdge;
+    numNonManifoldEdge = vcg::tri::Clean<MyMesh>::CountNonManifoldEdgeFF(m);
+    printf("removed number of non manifold faces %i\n", numNonManifoldEdge);
+    results[10] = numNonManifoldEdge;
 
-    int num_holes;
-    num_holes = CountHoles(m, true); // repair true -> try to repair the holes
-    printf("number of holes %i\n", num_holes);
-    results[10] = num_holes;
+    if (numNonManifoldEdge == 0) {
+        int num_holes;
+        num_holes = vcg::tri::Clean<MyMesh>::CountHoles(m); // repair true -> try to repair the holes
+        printf("number of holes %i\n", num_holes);
+        results[11] = num_holes;
+    }
 
     return;
 }
 
-int file_repair(MyMesh & mesh, int* results, int* repair_record) {
-    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for after fixing hole
+int file_repair(
+        MyMesh & mesh, int* results, int* repair_record,
+        const std::string repaired_path
+    ) {
 
-    assert(results[0] == 3); // version number needs to be 1
+    repair_record[0] = 1; // version 1 of file repair
+
+    assert(results[0] == 4); // version number needs to be 1
 
     printf("----------------- file repair-------------------\n");
 
@@ -322,15 +289,54 @@ int file_repair(MyMesh & mesh, int* results, int* repair_record) {
 
     if (results[6] == -1) {
         printf("isCoherentlyOriented is not init\n");
-        // return 1;
     }
 
     bool isWaterTight = results[5] == 1 ? true: false;
-
+    const int numNonManifoldEdge = results[10];
     bool isCoherentlyOriented = results[6] == 1 ? true: false;
 
+
+    printf("-----is water tight %d \n", isWaterTight);
+
+    if (!isWaterTight and numNonManifoldEdge > 0) {
+        int numNonManifoldFacesRemoved = vcg::tri::Clean<MyMesh>::RemoveNonManifoldFace(mesh);
+        repair_record[4] = 1;
+        printf("number non manifold faces removed %d \n", numNonManifoldFacesRemoved);
+
+        // reload mesh
+        vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+        MyMesh repaired_mesh;
+        loadMesh(mesh, repaired_path);
+        vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
+
+        isWaterTight = IsWaterTight(mesh);
+        isCoherentlyOriented = IsCoherentlyOrientedMesh(mesh);
+        printf("-----new is water tight %d \n", isWaterTight);
+        printf("-----new is coherently oriented %d \n", isCoherentlyOriented);
+    }
+
+    if (!isWaterTight) {
+        int numHoles = CountHoles(mesh);
+        printf("fix num of holes %d \n", numHoles);
+        if (numHoles > 0) {
+            repair_record[5] = 1;
+            vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh, true);
+
+            // reload mesh
+            vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+            MyMesh repaired_mesh;
+            loadMesh(mesh, repaired_path);
+            vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
+
+            isWaterTight = IsWaterTight(mesh);
+            isCoherentlyOriented = IsCoherentlyOrientedMesh(mesh);
+            printf("-----new is water tight %d \n", isWaterTight);
+            printf("-----new is coherently oriented %d \n", isCoherentlyOriented);
+        }
+    }
+
     bool doesMakeCoherentlyOriented = DoesMakeCoherentlyOriented(mesh, isWaterTight, isCoherentlyOriented);
-    repair_record[0] = doesMakeCoherentlyOriented;
+    repair_record[1] = doesMakeCoherentlyOriented;
 
     isCoherentlyOriented = IsCoherentlyOrientedMesh(mesh);
     bool isPositiveVolume = IsPositiveVolume(mesh);
@@ -341,27 +347,18 @@ int file_repair(MyMesh & mesh, int* results, int* repair_record) {
     }
 
     bool doesFlipNormalOutside = DoesFlipNormalOutside(mesh, isWaterTight, isCoherentlyOriented, isPositiveVolume);
-    repair_record[1] = doesFlipNormalOutside;
+    repair_record[2] = doesFlipNormalOutside;
     if (doesFlipNormalOutside)
         printf("flip normal outsite\n");
 
-    repair_record[2] = 0;
-
-    const int num_holes = results[10];
-    if (num_holes > 0) { // repair run always?
-        printf("Assume hole repair is runned");
-        repair_record[3] = 1;
-    } else {
-        printf("Assume hole repair is not runned");
-        repair_record[3] = 0;
-    }
+    repair_record[3] = 1;
 
     return 0;
 }
 
 void output_report(FILE* report, int* results, float* boundary, int* repair_record) {
 
-    assert(results[0] == 3);
+    assert(results[0] == 4 && repair_record[0] == 1);
 
     std::fprintf(report, "%d num_version\n",                     results[0]);
     std::fprintf(report, "%d num_face\n",                        results[1]);
@@ -373,17 +370,20 @@ void output_report(FILE* report, int* results, float* boundary, int* repair_reco
     std::fprintf(report, "%d is_positive_volume\n",              results[7]);
     std::fprintf(report, "%d num_intersecting_faces\n",          results[8]);
     std::fprintf(report, "%d num_shells\n",                      results[9]);
-    std::fprintf(report, "%d num_holes\n",                       results[10]);
+    std::fprintf(report, "%d num_non_manifold_edges\n",          results[10]);
+    std::fprintf(report, "%d num_holes\n",                       results[11]);
     std::fprintf(report, "%f min_x\n",                          boundary[0]);
     std::fprintf(report, "%f max_x\n",                          boundary[1]);
     std::fprintf(report, "%f min_y\n",                          boundary[2]);
     std::fprintf(report, "%f max_y\n",                          boundary[3]);
     std::fprintf(report, "%f min_z\n",                          boundary[4]);
     std::fprintf(report, "%f max_z\n",                          boundary[5]);
-    std::fprintf(report, "%d does_make_coherent_orient\n", repair_record[0]);
-    std::fprintf(report, "%d does_flip_normal_outside\n",  repair_record[1]);
-    std::fprintf(report, "%d does_union\n",                repair_record[2]);
-    std::fprintf(report, "%d does_hole_fix\n",             repair_record[3]);
+    std::fprintf(report, "%d repair_version\n",            repair_record[0]);
+    std::fprintf(report, "%d does_make_coherent_orient\n", repair_record[1]);
+    std::fprintf(report, "%d does_flip_normal_outside\n",  repair_record[2]);
+    std::fprintf(report, "%d does_union\n",                repair_record[3]);
+    std::fprintf(report, "%d does_rm_non_manif_faces\n",   repair_record[4]);
+    std::fprintf(report, "%d does_hole_fix\n",             repair_record[5]);
 }
 
 void file_repair_complex(const std::string repaired_path, MyMesh & mesh,
@@ -451,7 +451,7 @@ extern "C" {
         file_check(mesh, results, boundary);
     }
 
-    void file_check_repair(const std::string filepath, int* results, float* boundary, int* repair_record) {
+    void file_check_repair(const std::string filepath, int* results, float* boundary, int* repair_record, const std::string repaired_path) {
         printf("reading file  %s\n",filepath.c_str());
 
         MyMesh mesh;
@@ -464,7 +464,7 @@ extern "C" {
 
         file_check(mesh, results, boundary);
 
-        file_repair(mesh, results, repair_record);
+        file_repair(mesh, results, repair_record, repaired_path);
 
         std::printf("writing to path %s\n", "repaired.stl");
         vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, "repaired.stl");
@@ -516,6 +516,9 @@ int main( int argc, char *argv[] )
         }
 
         repaired_path = argv[2];
+    } else {
+        printf("repaired path is required");
+        return 1;
     }
 
     std::string report_path;
@@ -534,7 +537,7 @@ int main( int argc, char *argv[] )
     }
 
     printf("----------------- file check -------------------\n");
-    int results[11] = {
+    int results[12] = {
         -1, // 0 version number
         -1, // 1 face number
         -1, // 2 vertices number
@@ -545,26 +548,49 @@ int main( int argc, char *argv[] )
         -1, // 7 is positive volume
         -1, // 8 number of intersecting faces
         -1, // 9 number of connected components
-        -1  //10 number of holes
+        -1, //10 number of non manifold edges
+        -1  //11 number of holes
     };
 
     float boundary[6] = {-1, -1, -1, -1, -1, -1};
 
     MyMesh mesh;
     bool successfulLoadMesh = loadMesh(mesh, filepath);
+
+    //////////////////////////////// tiger test
+    repaired_path = "delete.stl";
+    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
+    printf("is watertight %d\n", IsWaterTight(mesh));
+    // int numNonManifoldFacesRemoved = vcg::tri::Clean<MyMesh>::RemoveNonManifoldFace(mesh);
+    // printf("number non manifold faces removed %d \n", numNonManifoldFacesRemoved);
+    int numHoles = CountHoles(mesh);
+    printf("number hole %d \n", numHoles);
+    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
+
+    // vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+    // loadMesh(mesh, repaired_path);
+    // vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
+
+    vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh);
+    printf("is watertight %d\n", IsWaterTight(mesh));
+    return 1;
+    /////////////////////////////// tiger test end
+
     if (not successfulLoadMesh) {
         return 1;
     }
     file_check(mesh, results, boundary);
 
-    int repair_record[4] = {
-        -1, // fix CoherentlyOriented
-        -1, // fix not Positive Volume
-        -1, // attempt to fix the union, require human check
-        -1  // attempt to fix hole
+    int repair_record[6] = {
+        -1, // 0 repair version
+        -1, // 1 fix CoherentlyOriented
+        -1, // 2 fix not Positive Volume
+        -1, // 3 attempt to fix the union, require human check
+        -1, // 4 remove non manifold faces
+        -1  // 5 fix hole
     };
 
-    file_repair(mesh, results, repair_record);
+    file_repair(mesh, results, repair_record, repaired_path);
 
     if (not repaired_path.empty())
         vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
@@ -576,9 +602,6 @@ int main( int argc, char *argv[] )
     } else {
         std::printf("repaired path is empty, didn't do repair complex %s\n", repaired_path.c_str());
     }
-
-
-    assert(results[0] == 3);
 
     if (report_path.empty()) {
         std::printf("report_path is not provided, write to stdout\n");
