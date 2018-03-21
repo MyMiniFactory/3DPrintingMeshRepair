@@ -1527,7 +1527,8 @@ static int CountHoles( MeshType & m)
       inBox.clear();
     }
 
-    FaceType::DeleteBitFlag(referredBit);
+    // removed by tiger TODO: understand why cause test error??
+    // FaceType::DeleteBitFlag(referredBit);
     return (ret.size()>0);
   }
 
