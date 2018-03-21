@@ -130,6 +130,7 @@ std::vector<std::vector<vcg::Point3<float>>> CountHoles(MyMesh & m)
 void repair_hole(
         MyMesh & mesh, std::vector<std::vector<vcg::Point3<float>>> vpss
     ) {
+    std::cout<<"in repair hole " << vpss.size() <<std::endl;
     for (auto& vps : vpss) {
         if (vps.size() >= 6) {
 
@@ -400,25 +401,7 @@ void file_repair_complex(const std::string repaired_path, MyMesh & mesh,
         if (result == 0) { // command line call without error
             repair_record[2] = 1; // record we do the union
         }
-
-
-        //int repaired_results[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
-        //float repaired_boundary[6];
-
-        //// no error on calling python script
-        //if (result == 0) {
-            //printf("----------------  new report  --------------------\n");
-            //file_check(repaired_path, repaired_results, repaired_boundary);
-
-            //FILE * report;
-            //report = stdout;
-
-            //output_report(report, repaired_results, repaired_boundary, repair_record);
-            //printf("----------------  new report  --------------------\n");
-        //}
     }
-
-
 }
 
 extern "C" {
@@ -493,8 +476,6 @@ bool DoesMakeCoherentlyOriented(MyMesh & mesh, bool isWaterTight, bool isCoheren
 int main( int argc, char *argv[] )
 {
     std::string filepath = "./unittest/meshes/perfect.stl";
-    // std::string filepath = "/home/mmf159/Documents/vcg_learning/unittest/meshes/duplicateFaces.stl";
-    // std::string filepath = "/home/mmf159/Downloads/wholething.stl";
     if (argc < 2) {
         printf("path to stl file not provided use default\n");
     } else {
@@ -526,9 +507,16 @@ int main( int argc, char *argv[] )
     }
 
 
-    std::string union_py_path;
+    std::string repaired_report_path;
     if (argc >= 5) {
-        union_py_path = argv[4];
+        repaired_report_path = argv[4];
+    } else {
+        printf("repaired report path is not given, writing to stdout\n");
+    }
+
+    std::string union_py_path;
+    if (argc >= 6) {
+        union_py_path = argv[5];
     } else {
         printf("Union python script is not given, not doing union\n");
     }
@@ -609,13 +597,19 @@ int main( int argc, char *argv[] )
     if (report_path.empty())
         report = stdout;
     else
-        report = std::fopen (report_path.c_str(), "w");
+        report = std::fopen(report_path.c_str(), "w");
 
     output_report(report, results, boundary, repair_record);
 
     loadMesh(mesh, repaired_path);
     std::printf("-------------------------- check for repair ----------\n");
     file_check(mesh, results, boundary);
+
+    if (repaired_report_path.empty())
+        report = stdout;
+    else
+        report = std::fopen(repaired_report_path.c_str(), "w");
+
     output_report(report, results, boundary, repair_record);
 
     return 0;

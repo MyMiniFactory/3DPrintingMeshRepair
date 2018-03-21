@@ -7,7 +7,7 @@ std::string meshPath = "./unittest/meshes/";
 int results[12] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 float boundary[6];
 int repair_record[6] = {-1, -1, -1, -1, -1, -1};
-auto repaired_path = meshPath+"out/repaired.stl";
+auto repaired_path = meshPath+"repaired.stl";
 
 TEST_CASE( "test successful loadMesh", "[file_check]" ) {
     MyMesh mesh;
@@ -134,7 +134,7 @@ TEST_CASE( "test intersecting faces", "[file_check]" ) {
     REQUIRE(
         NoIntersectingFaces(IntersectingFacesMesh, numIntersectingFaces) == false
     );
-    // REQUIRE(numIntersectingFaces == 0); // the intersecting algorithm is not good enough
+    REQUIRE(numIntersectingFaces > 0); // the intersecting algorithm is not good enough
 }
 
 TEST_CASE( "test mesh boundary", "[file_check]" ) {
@@ -158,30 +158,32 @@ TEST_CASE( "test if non manifold edges exists no count hole", "[file_check]" ) {
     auto filepath = meshPath+"3dpia-frontplate.stl";
 
     loadMesh(mesh, filepath);
-    // file_check(mesh, results, boundary);
+    file_check(mesh, results, boundary);
 
-    // REQUIRE(results[10] > 0); // this file has more than 0 non manifold edges
+    REQUIRE(results[10] > 0); // this file has more than 0 non manifold edges
     // if it has non manifold edges, count hole cannot be runned
     REQUIRE(results[11] == -1);
 }
 
-//TEST_CASE( "test shell", "[file_check]" ) {
-    //MyMesh Mesh;
-    //loadMesh(Mesh, meshPath+"perfect.stl");
-    //int numConnectedComponents;
-    //REQUIRE( IsSingleShell(Mesh, numConnectedComponents) == true );
-    //REQUIRE( numConnectedComponents == 2 );
-//}
+TEST_CASE( "test shell", "[file_check]" ) {
+    MyMesh mesh;
+    loadMesh(mesh, meshPath+"perfect.stl");
+    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for IsSingleShell
+    int numConnectedComponents;
+    REQUIRE( IsSingleShell(mesh, numConnectedComponents) == true );
+    REQUIRE( numConnectedComponents == 1 );
+}
 
-//TEST_CASE( "test multiple shells", "[file_check]" ) {
-    //MyMesh Mesh;
-    //loadMesh(Mesh, meshPath+"twoCubes.stl");
-    //int numConnectedComponents;
-    //REQUIRE(
-        //IsSingleShell(Mesh, numConnectedComponents) == false
-    //);
-    //REQUIRE( numConnectedComponents == 2 );
-//}
+TEST_CASE( "test multiple shells", "[file_check]" ) {
+    MyMesh mesh;
+    loadMesh(mesh, meshPath+"twoCubes.stl");
+    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for IsSingleShell
+    int numConnectedComponents;
+    REQUIRE(
+        IsSingleShell(mesh, numConnectedComponents) == false
+    );
+    REQUIRE( numConnectedComponents == 2 );
+}
 
 TEST_CASE( "test flip", "[file_repair]" ) {
     MyMesh Mesh;
@@ -273,7 +275,7 @@ TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 1); // fix for coherenltly oriented
-    REQUIRE(repair_record[2] == 1); // fix for negative volume
+    REQUIRE(repair_record[2] == 0); // fix for negative volume
     REQUIRE(repair_record[4] == 0); // no fix for remove non manifold
     REQUIRE(repair_record[5] == 0); // no fix for hole
 }
@@ -298,28 +300,15 @@ TEST_CASE( "test single shell", "[file_repair]" ) {
     REQUIRE(numConnectedComponents == 2); // one shell
 }
 
-TEST_CASE( "test fix hole function", "[file_repair]" ) {
-    MyMesh mesh;
-    auto filepath = meshPath+"2_missing_faces.stl";
-    loadMesh(mesh, filepath);
-    REQUIRE( IsWaterTight(mesh) == false );
-    CountHoles(mesh);
-
-    vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
-    MyMesh repaired_mesh;
-    loadMesh(repaired_mesh, repaired_path);
-    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
-    REQUIRE( IsWaterTight(repaired_mesh) == true );
-}
-
-
 TEST_CASE( "test repair for hole", "[file_repair]" ) {
 
     MyMesh mesh;
-    auto filepath = meshPath+"2_missing_faces.stl";
+    auto filepath = meshPath+"2MissingFaces.stl";
 
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
+    REQUIRE( IsWaterTight(mesh) == false );
+
     file_repair(mesh, results, repair_record, repaired_path);
 
     assert(repair_record[0] == 1);  // version 1
@@ -335,17 +324,17 @@ TEST_CASE( "test repair for hole", "[file_repair]" ) {
     REQUIRE( IsWaterTight(repaired_mesh) == true );
 }
 
-// TODO: check repair for remove non manifold faces
-
 TEST_CASE( "test repair for non manifold", "[file_repair]" ) {
 
     MyMesh mesh;
-    auto filepath = meshPath+"non_manifold_faces.stl";
+    auto filepath = meshPath+"nonManifoldFaces.stl";
 
     loadMesh(mesh, filepath);
+
     file_check(mesh, results, boundary);
-    file_repair(mesh, results, repair_record, repaired_path);
     REQUIRE( IsWaterTight(mesh) == false );
+
+    file_repair(mesh, results, repair_record, repaired_path);
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 0); // no fix for coherently oriented
