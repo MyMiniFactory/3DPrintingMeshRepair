@@ -6,7 +6,8 @@
 std::string meshPath = "./unittest/meshes/";
 int results[12] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 float boundary[6];
-int repair_record[3] = {-1, -1, -1};
+int repair_record[6] = {-1, -1, -1, -1, -1, -1};
+auto repaired_path = meshPath+"out/repaired.stl";
 
 TEST_CASE( "test successful loadMesh", "[file_check]" ) {
     MyMesh mesh;
@@ -226,7 +227,7 @@ TEST_CASE( "test no file repair", "[file_repair]" ) {
     auto filepath = meshPath+"perfect.stl";
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
-    file_repair(mesh, results, repair_record);
+    file_repair(mesh, results, repair_record, repaired_path);
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 0); // no fix coherently oriented
@@ -240,7 +241,7 @@ TEST_CASE( "test fix volume and coherent oriented", "[file_repair]" ) {
     auto filepath = meshPath+"notCoherentlyOriented.stl";
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
-    file_repair(mesh, results, repair_record);
+    file_repair(mesh, results, repair_record, repaired_path);
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 1); // fix for coherently oriented
@@ -254,7 +255,7 @@ TEST_CASE( "test only fix positive volume", "[file_repair]" ) {
     auto filepath = meshPath+"notPositiveVolume.stl";
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
-    file_repair(mesh, results, repair_record);
+    file_repair(mesh, results, repair_record, repaired_path);
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 0); // no fix for coherently oriented
@@ -268,12 +269,13 @@ TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
     auto filepath = meshPath+"mostly_notCoherentlyOriented.stl";
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
-    file_repair(mesh, results, repair_record);
+    file_repair(mesh, results, repair_record, repaired_path);
 
     assert(repair_record[0] == 1);  // version 1
-    REQUIRE(repair_record[0] == 1);
-    REQUIRE(repair_record[1] == 0);
-    REQUIRE(repair_record[3] == 0);
+    REQUIRE(repair_record[1] == 1); // fix for coherenltly oriented
+    REQUIRE(repair_record[2] == 1); // fix for negative volume
+    REQUIRE(repair_record[4] == 0); // no fix for remove non manifold
+    REQUIRE(repair_record[5] == 0); // no fix for hole
 }
 
 // for some reason there is error running test IsSingleShell function
@@ -301,9 +303,8 @@ TEST_CASE( "test fix hole function", "[file_repair]" ) {
     auto filepath = meshPath+"2_missing_faces.stl";
     loadMesh(mesh, filepath);
     REQUIRE( IsWaterTight(mesh) == false );
-    CountHoles(mesh, true);
+    CountHoles(mesh);
 
-    auto repaired_path = meshPath+"out/repaired.stl";
     vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
     MyMesh repaired_mesh;
     loadMesh(repaired_mesh, repaired_path);
@@ -316,11 +317,10 @@ TEST_CASE( "test repair for hole", "[file_repair]" ) {
 
     MyMesh mesh;
     auto filepath = meshPath+"2_missing_faces.stl";
-    auto repaired_path = meshPath+"out/repaired.stl";
 
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
-    file_repair(mesh, results, repair_record);
+    file_repair(mesh, results, repair_record, repaired_path);
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 0); // no fix for coherently oriented
@@ -328,7 +328,6 @@ TEST_CASE( "test repair for hole", "[file_repair]" ) {
     REQUIRE(repair_record[4] == 0); // no fix for remove non manifold
     REQUIRE(repair_record[5] == 1); // no fix for hole
 
-    auto repaired_path = meshPath+"out/repaired.stl";
     vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
     MyMesh repaired_mesh;
     loadMesh(repaired_mesh, repaired_path);
@@ -337,6 +336,29 @@ TEST_CASE( "test repair for hole", "[file_repair]" ) {
 }
 
 // TODO: check repair for remove non manifold faces
+
+TEST_CASE( "test repair for non manifold", "[file_repair]" ) {
+
+    MyMesh mesh;
+    auto filepath = meshPath+"non_manifold_faces.stl";
+
+    loadMesh(mesh, filepath);
+    file_check(mesh, results, boundary);
+    file_repair(mesh, results, repair_record, repaired_path);
+    REQUIRE( IsWaterTight(mesh) == false );
+
+    assert(repair_record[0] == 1);  // version 1
+    REQUIRE(repair_record[1] == 0); // no fix for coherently oriented
+    REQUIRE(repair_record[2] == 0); // fix for negative volume
+    REQUIRE(repair_record[4] == 1); // no fix for remove non manifold
+    REQUIRE(repair_record[5] == 0); // no fix for hole
+
+    vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+    MyMesh repaired_mesh;
+    loadMesh(repaired_mesh, repaired_path);
+    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
+    REQUIRE( IsWaterTight(repaired_mesh) == true );
+}
 
 
 

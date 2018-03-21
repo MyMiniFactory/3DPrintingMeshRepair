@@ -68,8 +68,9 @@ bool DoesFlipNormalOutside(MyMesh & mesh,
         bool isWaterTight, bool isCoherentlyOriented, bool isPositiveVolume);
 bool DoesMakeCoherentlyOriented(MyMesh & mesh,
         bool isWaterTight, bool isCoherentlyOriented);
-int CountHoles(MyMesh & m, bool repair=true);
+std::vector<std::vector<vcg::Point3<float>>> CountHoles(MyMesh & m);
 
-int file_repair(MyMesh & mesh, int* results, int* repair_record);
+int file_repair(MyMesh & mesh, int* results, int* repair_record,
+        const std::string repaired_path);
 
 #endif
