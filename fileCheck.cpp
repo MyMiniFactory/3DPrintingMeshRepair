@@ -415,20 +415,20 @@ void file_repair_complex(const std::string repaired_path, MyMesh & mesh,
         int* results, int* repair_record, std::string union_py_path) {
     // put repair function here which requires backend
 
-    int numIntersectingFaces = results[8];
-    int numConnectedComponents = results[9];
+    // int numIntersectingFaces = results[8];
+    // int numConnectedComponents = results[9];
 
-    repair_record[2] = 0; // record we do the union
-    if (numConnectedComponents > 1 and numIntersectingFaces > 0) {
-        // do union
-        printf("Doing union\n");
-        auto command = "python3 " + union_py_path + " "+ repaired_path + " " + repaired_path;
-        int result = system(command.c_str());
-        printf("result from calling union %i\n", result);
-        if (result == 0) { // command line call without error
-            repair_record[2] = 1; // record we do the union
-        }
-    }
+    repair_record[2] = 0; // record we don't do the union
+    // if (numConnectedComponents > 1 and numIntersectingFaces > 0) {
+        // // do union
+        // printf("Doing union\n");
+        // auto command = "python3 " + union_py_path + " "+ repaired_path + " " + repaired_path;
+        // int result = system(command.c_str());
+        // printf("result from calling union %i\n", result);
+        // if (result == 0) { // command line call without error
+            // repair_record[2] = 1; // record we do the union
+        // }
+    // }
 }
 
 extern "C" {
