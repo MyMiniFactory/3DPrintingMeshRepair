@@ -4,7 +4,7 @@
 #include "fileCheck.hpp"
 
 std::string meshPath = "./unittest/meshes/";
-int results[12] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+int results[13] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 float boundary[6];
 int repair_record[6] = {-1, -1, -1, -1, -1, -1};
 auto repaired_path = meshPath+"repaired.stl";
@@ -239,6 +239,7 @@ TEST_CASE( "test no file repair", "[file_repair]" ) {
     auto filepath = meshPath+"perfect.stl";
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
+
     file_repair(mesh, results, repair_record, repaired_path);
 
     assert(repair_record[0] == 1);  // version 1
@@ -246,6 +247,7 @@ TEST_CASE( "test no file repair", "[file_repair]" ) {
     REQUIRE(repair_record[2] == 0); // no fix negative volume
     REQUIRE(repair_record[4] == 0); // no fix for remove non manifold
     REQUIRE(repair_record[5] == 0); // no fix hole
+    REQUIRE(repair_record[12] == 0); // good mesh
 }
 
 TEST_CASE( "test fix volume and coherent oriented", "[file_repair]" ) {
@@ -260,6 +262,7 @@ TEST_CASE( "test fix volume and coherent oriented", "[file_repair]" ) {
     REQUIRE(repair_record[2] == 1); // fix for negative volume
     REQUIRE(repair_record[4] == 0); // no fix for remove non manifold
     REQUIRE(repair_record[5] == 0); // no fix for hole
+    REQUIRE(repair_record[12] == 0); // bad mesh
 }
 
 TEST_CASE( "test only fix positive volume", "[file_repair]" ) {
@@ -267,6 +270,7 @@ TEST_CASE( "test only fix positive volume", "[file_repair]" ) {
     auto filepath = meshPath+"notPositiveVolume.stl";
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
+
     file_repair(mesh, results, repair_record, repaired_path);
 
     assert(repair_record[0] == 1);  // version 1
@@ -274,6 +278,7 @@ TEST_CASE( "test only fix positive volume", "[file_repair]" ) {
     REQUIRE(repair_record[2] == 1); // fix for negative volume
     REQUIRE(repair_record[4] == 0); // no fix for remove non manifold
     REQUIRE(repair_record[5] == 0); // no fix for hole
+    REQUIRE(repair_record[12] == 0); // bad mesh
 }
 
 TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
@@ -281,6 +286,7 @@ TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
     auto filepath = meshPath+"mostly_notCoherentlyOriented.stl";
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
+
     file_repair(mesh, results, repair_record, repaired_path);
 
     assert(repair_record[0] == 1);  // version 1
@@ -288,6 +294,7 @@ TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
     REQUIRE(repair_record[2] == 0); // fix for negative volume
     REQUIRE(repair_record[4] == 0); // no fix for remove non manifold
     REQUIRE(repair_record[5] == 0); // no fix for hole
+    REQUIRE(repair_record[12] == 0); // bad mesh
 }
 
 // for some reason there is error running test IsSingleShell function
@@ -326,6 +333,7 @@ TEST_CASE( "test repair for hole", "[file_repair]" ) {
     REQUIRE(repair_record[2] == 0); // fix for negative volume
     REQUIRE(repair_record[4] == 0); // no fix for remove non manifold
     REQUIRE(repair_record[5] == 1); // no fix for hole
+    REQUIRE(repair_record[12] == 0); // bad mesh
 
     vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
     MyMesh repaired_mesh;
@@ -351,6 +359,7 @@ TEST_CASE( "test repair for non manifold", "[file_repair]" ) {
     REQUIRE(repair_record[2] == 0); // fix for negative volume
     REQUIRE(repair_record[4] == 1); // no fix for remove non manifold
     REQUIRE(repair_record[5] == 0); // no fix for hole
+    REQUIRE(repair_record[12] == 0); // bad mesh
 
     vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
     MyMesh repaired_mesh;

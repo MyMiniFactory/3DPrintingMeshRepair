@@ -91,6 +91,44 @@ bool IsSingleShell(MyMesh & mesh, int & numConnectedComponents) {
     return (numConnectedComponents == 1) ? true : false;
 }
 
+bool IsGoodMesh(int* results) {
+    assert(results[0] == 4);
+    // 5 is watertight
+    // 6 is coherently oriented
+    // 7 is positive volume
+
+    bool isWaterTight = results[5];
+    bool isCoherentlyOriented = results[6];
+    bool isPositiveVolume = results[7];
+
+    if (isWaterTight and isCoherentlyOriented and isPositiveVolume) {
+        printf("Good mesh\n");
+        return true;
+    } else {
+        return false;
+    }
+
+    // bool isWaterTightR = repair_results[5];
+    // bool isCoherentlyOrientedR = repair_results[6];
+    // bool isPositiveVolumeR = repair_results[7];
+    // int numIntersectingFacesR = repair_results[8];
+    // int numConnectedComponentsR = repair_results[9];
+
+    // if (isWaterTightR and isCoherentlyOrientedR and isPositiveVolumeR
+            // // make sure no added intersecting faces
+            // and numIntersectingFacesR == numIntersectingFaces
+            // // make sure no added connected components
+            // and numConnectedComponentsR == numConnectedComponents
+    // ) {
+        // printf("Good mesh\n");
+        // return true;
+    // }
+
+    // printf("Bad mesh\n");
+    // return false;
+}
+
+
 std::vector<std::vector<vcg::Point3<float>>> CountHoles(MyMesh & m)
 {
     vcg::tri::UpdateFlags<MyMesh>::FaceClearV(m);
@@ -274,6 +312,8 @@ void file_check(MyMesh & m, int* results, float* boundary) {
         results[11] = numHoles;
     }
 
+    results[12] = IsGoodMesh(results);
+
     return;
 }
 
@@ -395,6 +435,7 @@ void output_report(FILE* report, int* results, float* boundary, int* repair_reco
     std::fprintf(report, "%d num_shells\n",                      results[9]);
     std::fprintf(report, "%d num_non_manifold_edges\n",          results[10]);
     std::fprintf(report, "%d num_holes\n",                       results[11]);
+    std::fprintf(report, "%d is_good_mesh\n",                    results[12]);
     std::fprintf(report, "%f min_x\n",                          boundary[0]);
     std::fprintf(report, "%f max_x\n",                          boundary[1]);
     std::fprintf(report, "%f min_y\n",                          boundary[2]);
@@ -498,51 +539,7 @@ bool DoesMakeCoherentlyOriented(MyMesh & mesh, bool isWaterTight, bool isCoheren
     }
 }
 
-bool GoodMesh(int* results, int* repair_results) {
-    assert(results[0] == 4);
-    // 0 version number
-    // 1 face number
-    // 2 vertices number
-    // 3 number of degenerated faces
-    // 4 number of duplicate faces
-    // 5 is watertight
-    // 6 is coherently oriented
-    // 7 is positive volume
-    // 8 number of intersecting faces
-    // 9 number of connected components
-    //10 number of non manifold edges
-    //11 number of holes
-
-    bool isWaterTight = results[5];
-    bool isCoherentlyOriented = results[6];
-    bool isPositiveVolume = results[7];
-    int numIntersectingFaces = results[8];
-    int numConnectedComponents = results[9];
-
-    if (isWaterTight and isCoherentlyOriented and isPositiveVolume) {
-        printf("Good mesh");
-        return true;
-    }
-
-    bool isWaterTightR = repair_results[5];
-    bool isCoherentlyOrientedR = repair_results[6];
-    bool isPositiveVolumeR = repair_results[7];
-    int numIntersectingFacesR = repair_results[8];
-    int numConnectedComponentsR = repair_results[9];
-
-    if (isWaterTightR and isCoherentlyOrientedR and isPositiveVolumeR
-            // make sure no added intersecting faces
-            and numIntersectingFacesR == numIntersectingFaces
-            // make sure no added connected components
-            and numConnectedComponentsR == numConnectedComponents
-    ) {
-        printf("Good mesh");
-        return true;
-    }
-
-    return false;
-}
-
+// TODO: write test for this function
 #ifndef FILECHECK_TEST
 int main( int argc, char *argv[] )
 {
@@ -593,7 +590,7 @@ int main( int argc, char *argv[] )
     }
 
     printf("----------------- file check -------------------\n");
-    int results[12] = {
+    int results[13] = {
         -1, // 0 version number
         -1, // 1 face number
         -1, // 2 vertices number
@@ -605,10 +602,11 @@ int main( int argc, char *argv[] )
         -1, // 8 number of intersecting faces
         -1, // 9 number of connected components
         -1, //10 number of non manifold edges
-        -1  //11 number of holes
+        -1, //11 number of holes
+        -1  //11 good or bad
     };
 
-    int repair_results[12] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    int repair_results[13] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
     float boundary[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
 
     MyMesh mesh;
@@ -653,13 +651,13 @@ int main( int argc, char *argv[] )
     if (not repaired_path.empty())
         vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
 
-    if (not repaired_path.empty() and not union_py_path.empty()) {
-        std::printf("writing to path %s\n", repaired_path.c_str());
-        file_repair_complex(repaired_path, mesh, results, repair_record, union_py_path); // writing to repaired path
-        vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
-    } else {
-        std::printf("repaired path is empty, didn't do repair complex %s\n", repaired_path.c_str());
-    }
+    // if (not repaired_path.empty() and not union_py_path.empty()) {
+        // std::printf("writing to path %s\n", repaired_path.c_str());
+        // file_repair_complex(repaired_path, mesh, results, repair_record, union_py_path); // writing to repaired path
+        // vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+    // } else {
+        // std::printf("repaired path is empty, didn't do repair complex %s\n", repaired_path.c_str());
+    // }
 
     if (report_path.empty()) {
         std::printf("report_path is not provided, write to stdout\n");
@@ -683,8 +681,6 @@ int main( int argc, char *argv[] )
         report = std::fopen(repaired_report_path.c_str(), "w");
 
     output_report(report, results, boundary, repair_record);
-
-    GoodMesh(results, repair_results);
 
     return 0;
 }
