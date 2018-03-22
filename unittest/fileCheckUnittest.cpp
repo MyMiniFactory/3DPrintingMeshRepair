@@ -140,8 +140,6 @@ TEST_CASE( "test intersecting faces", "[file_check]" ) {
 TEST_CASE( "test mesh boundary", "[file_check]" ) {
     MyMesh Mesh;
     loadMesh(Mesh, meshPath+"perfect.stl");
-    float boundary[6];
-
     Boundary(Mesh, boundary);
 
     REQUIRE( boundary[0] == (float) -1.0 );
@@ -151,6 +149,18 @@ TEST_CASE( "test mesh boundary", "[file_check]" ) {
     REQUIRE( boundary[4] == (float) -1.0 );
     REQUIRE( boundary[5] == (float)  1.0 );
     // REQUIRE(numIntersectingFaces == 0); // the intersecting algorithm is not good enough
+}
+
+TEST_CASE( "test mesh area", "[file_check]" ) {
+    MyMesh Mesh;
+    loadMesh(Mesh, meshPath+"perfect.stl");
+    REQUIRE(Area(Mesh) == (float) 24.);
+}
+
+TEST_CASE( "test mesh volume", "[file_check]" ) {
+    MyMesh Mesh;
+    loadMesh(Mesh, meshPath+"perfect.stl");
+    REQUIRE(Volume(Mesh) == (float) 8.);
 }
 
 TEST_CASE( "test if non manifold edges exists no count hole", "[file_check]" ) {

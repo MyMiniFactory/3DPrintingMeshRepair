@@ -50,6 +50,9 @@ class MyMesh    : public vcg::tri::TriMesh< std::vector<MyVertex>, std::vector<M
 bool loadMesh(MyMesh & mesh, const std::string filepath);
 
 void Boundary(MyMesh & mesh, float* boundary);
+float Volume(MyMesh & mesh);
+float Area(MyMesh & mesh);
+
 bool NoDegenratedFaces(MyMesh & mesh, int & numDegeneratedFaces);
 bool NoDuplicateFaces(MyMesh & mesh, int & numDuplicateFaces);
 bool NoIntersectingFaces(MyMesh & mesh, int & numIntersectingFaces);

@@ -68,9 +68,21 @@ bool IsCoherentlyOrientedMesh(MyMesh & mesh) {
     return vcg::tri::Clean<MyMesh>::IsCoherentlyOrientedMesh(mesh);
 }
 
-bool IsPositiveVolume(MyMesh & mesh) {
+float Volume(MyMesh & mesh) {
     vcg::tri::Inertia<MyMesh> Ib(mesh);
-    return Ib.Mass() > 0. ;
+    return Ib.Mass();
+}
+
+bool IsPositiveVolume(MyMesh & mesh) {
+    return Volume(mesh) > 0. ;
+}
+
+float Area(MyMesh & mesh) {
+    float area = 0;
+    for(auto fi = mesh.face.begin(); fi!=mesh.face.end();++fi)
+        if(!fi->IsD())
+            area += DoubleArea(*fi)/2;
+    return area;
 }
 
 bool IsSingleShell(MyMesh & mesh, int & numConnectedComponents) {
@@ -219,6 +231,9 @@ void file_check(MyMesh & m, int* results, float* boundary) {
     printf( "ymin %f ymax %f \n", boundary[2], boundary[3]);
     printf( "zmin %f zmax %f \n", boundary[4], boundary[5]);
 
+    boundary[6] = Area(m);
+    boundary[7] = Volume(m);
+
     vcg::tri::UpdateTopology<MyMesh>::FaceFace(m); // require for isWaterTight
     printf( "Update topology \n");
 
@@ -255,7 +270,7 @@ void file_check(MyMesh & m, int* results, float* boundary) {
     if (numNonManifoldEdge == 0) {
         auto vpss = CountHoles(m);
         auto numHoles = vpss.size();
-        printf("number of holes %i\n", numHoles);
+        printf("number of holes %li\n", numHoles);
         results[11] = numHoles;
     }
 
@@ -287,6 +302,16 @@ int file_repair(
     const int numNonManifoldEdge = results[10];
     bool isCoherentlyOriented = results[6] == 1 ? true: false;
 
+
+    // tiger test not necessary
+    {
+        int numHoles = results[11];
+        if (numNonManifoldEdge == 0 and numHoles == 0 and not isWaterTight) {
+            printf("isWaterTight is because of vertex ?? num nonmanif vertex%d",
+                    vcg::tri::Clean<MyMesh>::CountNonManifoldVertexFF(mesh));
+        }
+    }
+    // tiger test not necessary
 
     printf("-----is water tight %d \n", isWaterTight);
 
@@ -376,6 +401,8 @@ void output_report(FILE* report, int* results, float* boundary, int* repair_reco
     std::fprintf(report, "%f max_y\n",                          boundary[3]);
     std::fprintf(report, "%f min_z\n",                          boundary[4]);
     std::fprintf(report, "%f max_z\n",                          boundary[5]);
+    std::fprintf(report, "%f area\n",                           boundary[6]);
+    std::fprintf(report, "%f volume\n",                         boundary[7]);
     std::fprintf(report, "%d repair_version\n",            repair_record[0]);
     std::fprintf(report, "%d does_make_coherent_orient\n", repair_record[1]);
     std::fprintf(report, "%d does_flip_normal_outside\n",  repair_record[2]);
@@ -471,6 +498,50 @@ bool DoesMakeCoherentlyOriented(MyMesh & mesh, bool isWaterTight, bool isCoheren
     }
 }
 
+bool GoodMesh(int* results, int* repair_results) {
+    assert(results[0] == 4);
+    // 0 version number
+    // 1 face number
+    // 2 vertices number
+    // 3 number of degenerated faces
+    // 4 number of duplicate faces
+    // 5 is watertight
+    // 6 is coherently oriented
+    // 7 is positive volume
+    // 8 number of intersecting faces
+    // 9 number of connected components
+    //10 number of non manifold edges
+    //11 number of holes
+
+    bool isWaterTight = results[5];
+    bool isCoherentlyOriented = results[6];
+    bool isPositiveVolume = results[7];
+    int numIntersectingFaces = results[8];
+    int numConnectedComponents = results[9];
+
+    if (isWaterTight and isCoherentlyOriented and isPositiveVolume) {
+        printf("Good mesh");
+        return true;
+    }
+
+    bool isWaterTightR = repair_results[5];
+    bool isCoherentlyOrientedR = repair_results[6];
+    bool isPositiveVolumeR = repair_results[7];
+    int numIntersectingFacesR = repair_results[8];
+    int numConnectedComponentsR = repair_results[9];
+
+    if (isWaterTightR and isCoherentlyOrientedR and isPositiveVolumeR
+            // make sure no added intersecting faces
+            and numIntersectingFacesR == numIntersectingFaces
+            // make sure no added connected components
+            and numConnectedComponentsR == numConnectedComponents
+    ) {
+        printf("Good mesh");
+        return true;
+    }
+
+    return false;
+}
 
 #ifndef FILECHECK_TEST
 int main( int argc, char *argv[] )
@@ -537,7 +608,8 @@ int main( int argc, char *argv[] )
         -1  //11 number of holes
     };
 
-    float boundary[6] = {-1, -1, -1, -1, -1, -1};
+    int repair_results[12] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+    float boundary[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
 
     MyMesh mesh;
     bool successfulLoadMesh = loadMesh(mesh, filepath);
@@ -603,7 +675,7 @@ int main( int argc, char *argv[] )
 
     loadMesh(mesh, repaired_path);
     std::printf("-------------------------- check for repair ----------\n");
-    file_check(mesh, results, boundary);
+    file_check(mesh, repair_results, boundary);
 
     if (repaired_report_path.empty())
         report = stdout;
@@ -611,6 +683,8 @@ int main( int argc, char *argv[] )
         report = std::fopen(repaired_report_path.c_str(), "w");
 
     output_report(report, results, boundary, repair_record);
+
+    GoodMesh(results, repair_results);
 
     return 0;
 }
