@@ -670,17 +670,22 @@ int main( int argc, char *argv[] )
         report = std::fopen(report_path.c_str(), "w");
 
     output_report(report, results, boundary, repair_record);
+    std::fclose(report);
 
     loadMesh(mesh, repaired_path);
     std::printf("-------------------------- check for repair ----------\n");
     file_check(mesh, repair_results, boundary);
 
+    FILE * repair_report;
     if (repaired_report_path.empty())
-        report = stdout;
+        repair_report = stdout;
     else
-        report = std::fopen(repaired_report_path.c_str(), "w");
+        repair_report = std::fopen(repaired_report_path.c_str(), "w");
 
-    output_report(report, results, boundary, repair_record);
+    output_report(repair_report, repair_results, boundary, repair_record);
+    std::fclose(repair_report);
+
+    exit(0);
 
     return 0;
 }
