@@ -13,7 +13,6 @@
             var stl_name = filename;
 
             var data = new Uint8Array(fr.result); // base64 to Uint8 for emscripten
-            console.log(data);
 
             Module['FS_createDataFile'](".", stl_name, data, true, true);
 
@@ -23,25 +22,55 @@
                     [stl_name]
             );
 
-            const check = {};
-            let res = Module['FS_readFile']("report.txt", {encoding:'utf8'});
-            res = res.split("\n");
-            res.forEach(function (x) {
-                x = x.split(" ");
-                const key = x[1];
-                let value = x[0];
+            // update_from_result(check);
+            read_report("report.txt");
+            read_report("repair_report.txt");
+        } // fr.onload
+    }
 
-                if (value.includes(".")) { // HACK
-                    value = parseFloat(value);
-                } else {
-                    value = parseInt(value);
-                }
+    function read_report(report_name) {
+        const check = {};
+        // clean HTML
+        document.getElementById("check_data").innerHTML = "";
 
-                check[key] = value;
-            })
+        let res = Module['FS_readFile'](report_name, {encoding:'utf8'});
+        res = res.split("\n");
+        for (let i=0;i<res.length;i++) {
+            let x = res[i];
+            console.log(x);
 
-            update_from_result(check);
-        };
+            x = x.split(" ");
+
+            if (x.length < 2) continue;
+
+            const key = x[1];
+            let value = x[0];
+
+            if (value.includes(".")) { // HACK
+                value = parseFloat(value);
+            } else {
+                value = parseInt(value);
+            }
+
+            check[key] = value;
+
+            // add to html
+            if (key.includes("min")
+                    || key.includes("max")
+                    || key.includes("area")
+                    || (key.includes("volume") && !key.includes("is_pos"))
+               ) {
+                const row = document.getElementsByTagName("template")[1];
+                const key_HTML = row.content.querySelector(".key");
+                key_HTML.innerHTML = key;
+                const value_HTML = row.content.querySelector(".value");
+                value_HTML.innerHTML = value;
+                const to_add = document.importNode(row.content, true);
+                document.getElementById("check_data").appendChild(to_add);
+            }
+        }
+
+        update_from_result(check);
     }
 
     function blob_download(stl_name) {
@@ -74,6 +103,7 @@
     }
 
     function update_from_result(check) {
+
         const repair_divs = document.getElementsByClassName("repair");
         for (var i=0;i<repair_divs.length;i++) {
             repair_divs[i].style.display = "None";
@@ -133,7 +163,7 @@
                 fix_consistent_normal===1 ||
                 fix_volume_bigger_0===1
             ) {
-                blob_download(stl_name);
+                blob_download(stl_name); // TODO: fix this
             } else {
                 set_download_text_disabled("original mesh is perfect", true);
             }
@@ -361,7 +391,7 @@
 
 <body onload="init()">
 
-    <template id="container">
+    <template>
         <div>
             <div class="container">
                 <div class="condition left"><p></p></div>
@@ -380,8 +410,16 @@
         <div>
     </template>
 
+    <template>
+        <tr>
+            <td class="key"></td>
+            <td class="value"></td>
+        </tr>
+    </template>
+
     <div id="content"></div>
     <a id="download"><button disabled>Click to download repaired file</button></a>
+    <table id="check_data"></table>
 
     <div>
         <span><br> the gif check whether render loop is running <br></span>
