@@ -308,7 +308,7 @@ void file_check(MyMesh & m, int* results, float* boundary) {
     if (numNonManifoldEdge == 0) {
         auto vpss = CountHoles(m);
         auto numHoles = vpss.size();
-        printf("number of holes %li\n", numHoles);
+        printf("number of holes %u\n", numHoles);
         results[11] = numHoles;
     }
 
@@ -420,6 +420,7 @@ int file_repair(
 }
 
 void output_report(FILE* report, int* results, float* boundary, int* repair_record) {
+    printf("---------------writing report\n");
 
     assert(results[0] == 4 && repair_record[0] == 1);
 
@@ -472,50 +473,65 @@ void file_repair_complex(const std::string repaired_path, MyMesh & mesh,
     // }
 }
 
-extern "C" {
+void file_check(const std::string filepath, int* results, float* boundary) {
+    printf("reading file  %s\n",filepath.c_str());
 
-    //void print_file(const std::string filepath) {
-        //printf("print_file function reading file  %s\n",filepath.c_str());
-
-        //std::ifstream f(filepath.c_str());
-        //if (f.is_open())
-            //std::cout << f.rdbuf() << std::endl;
-        //else
-            //std::cout << "file not open\n";
-
-        //std::cout << "finish\n";
-    //}
-
-    void file_check(const std::string filepath, int* results, float* boundary) {
-        printf("reading file  %s\n",filepath.c_str());
-
-        MyMesh mesh;
-        int a = 2;
-        if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(),  a))
-        {
-            printf("Error reading file  %s\n",filepath.c_str());
-            exit(0);
-        }
-        file_check(mesh, results, boundary);
+    MyMesh mesh;
+    int a = 2;
+    if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(),  a))
+    {
+        printf("Error reading file  %s\n",filepath.c_str());
+        exit(0);
     }
+    file_check(mesh, results, boundary);
+}
 
-    void file_check_repair(const std::string filepath, int* results, float* boundary, int* repair_record, const std::string repaired_path) {
-        printf("reading file  %s\n",filepath.c_str());
+extern "C" {
+    // void file_check_repair(const std::string filepath, int* results, float* boundary, int* repair_record, const std::string repaired_path) {
+        // printf("reading file  %s\n",filepath.c_str());
+
+        // MyMesh mesh;
+        // int a = 2;
+        // if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(),  a))
+        // {
+            // printf("Error reading file  %s\n",filepath.c_str());
+            // exit(0);
+        // }
+
+        // file_check(mesh, results, boundary);
+
+        // file_repair(mesh, results, repair_record, repaired_path);
+
+        // std::printf("writing to path %s\n", "repaired.stl");
+        // vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, "repaired.stl");
+    // }
+
+    int js_check_repair(const std::string filepath) {
+        printf("-----------------hello new file check -------------------\n");
+        int results[13] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+        float boundary[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+        int repair_record[6] = { -1, -1, -1, -1, -1, -1 };
 
         MyMesh mesh;
-        int a = 2;
-        if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(),  a))
+        // bool successfulLoadMesh = loadMesh(mesh, filepath);
+        int load_mask = 2;
+        if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(), load_mask))
         {
             printf("Error reading file  %s\n",filepath.c_str());
             exit(0);
         }
 
+        bool RemoveDegenerateFlag=false;
+        vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag);
+
         file_check(mesh, results, boundary);
+        FILE * report;
+        report = std::fopen("report.txt", "w");
+        repair_record[0] = 1;
+        output_report(report, results, boundary, repair_record);
+        std::fclose(report);
 
-        file_repair(mesh, results, repair_record, repaired_path);
-
-        std::printf("writing to path %s\n", "repaired.stl");
-        vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, "repaired.stl");
+        return 0;
     }
 }
 
@@ -610,26 +626,6 @@ int main( int argc, char *argv[] )
 
     MyMesh mesh;
     bool successfulLoadMesh = loadMesh(mesh, filepath);
-
-    //////////////////////////////// tiger test
-    /*
-    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
-    printf("is watertight %d\n", IsWaterTight(mesh));
-    // int numNonManifoldFacesRemoved = vcg::tri::Clean<MyMesh>::RemoveNonManifoldFace(mesh);
-    // printf("number non manifold faces removed %d \n", numNonManifoldFacesRemoved);
-    int numHoles = CountHoles(mesh);
-    printf("number hole %d \n", numHoles);
-    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
-
-    // vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
-    // loadMesh(mesh, repaired_path);
-    // vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
-
-    vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh);
-    printf("is watertight %d\n", IsWaterTight(mesh));
-    return 1;
-    */
-    /////////////////////////////// tiger test end
 
     if (not successfulLoadMesh) {
         return 1;
