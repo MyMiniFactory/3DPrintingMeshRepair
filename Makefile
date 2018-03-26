@@ -1,5 +1,5 @@
 # BUILD can be debug or release
-BUILD := debug
+BUILD := release
 
 cxxflags.release := -O3
 
@@ -25,6 +25,7 @@ FILECHECK_CPP := fileCheck.cpp
 UNITTEST_CPP := unittest/fileCheckUnittest.cpp
 
 EMCC := em++
+WASM := -s WASM=1
 
 build:
 	@echo BUILD=${BUILD}
@@ -45,3 +46,6 @@ em:
 emtest:
 	${EMCC} ${FILECHECK_CPP} ${UNITTEST_CPP} ${CXXFLAGS} ${UNITTESTCXXFLAGS} ${EM_UNITTESTCXXFLAGS} ${EM_EXTRA_FLAGS} -o ${EM_UNITTEST_OUT_HTML}
 	@echo run it like google-chrome ${EM_UNITTEST_OUT_HTML} or nodejs ./unittest/unittest_out/filecheck.js
+
+wasm:
+	${EMCC} ${FILECHECK_CPP} ${CXXFLAGS} ${EM_CXXFLAGS} ${EM_EXTRA_FLAGS} -o ${EM_OUT_JS} ${WASM}
