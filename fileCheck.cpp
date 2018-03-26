@@ -545,12 +545,12 @@ int main( int argc, char *argv[] )
 {
     std::string filepath = "./unittest/meshes/perfect.stl";
     if (argc < 2) {
-        printf("path to stl file not provided use default\n");
+        printf("path to stl file not provided use default %s\n", filepath.c_str());
     } else {
         filepath = argv[1];
     }
 
-    std::string repaired_path;
+    std::string repaired_path = "./out/repaired_perfect.stl";
     if (argc >= 3) {
         std::string filepath_0 = argv[1];
         std::string filepath_1 = argv[2];
@@ -563,8 +563,7 @@ int main( int argc, char *argv[] )
 
         repaired_path = argv[2];
     } else {
-        printf("repaired path is required");
-        return 1;
+        printf("repaired path is given writing to %s\n", repaired_path.c_str());
     }
 
     std::string report_path;
