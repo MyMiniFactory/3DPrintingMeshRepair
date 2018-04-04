@@ -7,7 +7,7 @@ CC := g++
 OUT_EXE := ./out/filecheck
 CXXFLAGS += -std=c++11 -I ./vcglib/ -I ./vcglib/eigenlib/ -I . ${cxxflags.${BUILD}}
 
-EM_OUT_JS := ./upload_form/filecheck.js
+EM_OUT_JS := filecheck.js
 
 UNITTEST_OUT_EXE := ./unittest/unittest_out/filecheck
 EM_UNITTEST_OUT_HTML := ./unittest/unittest_out/filecheck.html

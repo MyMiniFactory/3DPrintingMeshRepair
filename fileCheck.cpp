@@ -541,6 +541,8 @@ extern "C" {
         float boundary[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
         int repair_record[6] = { -1, -1, -1, -1, -1, -1 };
 
+        int repair_results[13] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+
         MyMesh mesh;
         // bool successfulLoadMesh = loadMesh(mesh, filepath);
         int load_mask = 2;
@@ -556,31 +558,16 @@ extern "C" {
         printf("---------------- file check -------------------\n");
         file_check(mesh, results, boundary);
 
-
-
         std::string repaired_path = "repaired.stl";
         printf("---------------- file repair -------------------\n");
-        file_repair(mesh, results, repair_record, repaired_path);
+        file_repair_then_check(mesh, results, repair_results, boundary, repaired_path, repair_record);
 
         FILE * report;
         report = std::fopen("report.txt", "w");
         output_report(report, results, boundary, repair_record);
         std::fclose(report);
 
-        if (not repaired_path.empty())
-            vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
-
-        if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, repaired_path.c_str(), load_mask))
-        {
-            printf("Error reading file  %s\n",filepath.c_str());
-            exit(0);
-        }
-
-        vcg::tri::Clean<MyMesh>::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag);
-
         printf("---------------- file check for repair -------------------\n");
-        int repair_results[13] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
-        file_check(mesh, repair_results, boundary);
         report = std::fopen("repair_report.txt", "w");
         output_report(report, repair_results, boundary, repair_record);
         std::fclose(report);
