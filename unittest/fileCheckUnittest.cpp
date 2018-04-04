@@ -5,6 +5,7 @@
 
 std::string meshPath = "./unittest/meshes/";
 int results[13] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+int repair_results[13] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 float boundary[6];
 int repair_record[7] = {-1, -1, -1, -1, -1, -1, -1};
 auto repaired_path = meshPath+"repaired.stl";
@@ -240,7 +241,10 @@ TEST_CASE( "test no file repair", "[file_repair]" ) {
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
 
-    file_repair(mesh, results, repair_record, repaired_path);
+    // file_repair(mesh, results, repair_record, repaired_path);
+    file_repair_then_check(
+        mesh, results, repair_results, boundary, repaired_path, repair_record
+    );
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 0); // no fix coherently oriented
@@ -256,7 +260,10 @@ TEST_CASE( "test fix volume and coherent oriented", "[file_repair]" ) {
     auto filepath = meshPath+"notCoherentlyOriented.stl";
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
-    file_repair(mesh, results, repair_record, repaired_path);
+    // file_repair(mesh, results, repair_record, repaired_path);
+    file_repair_then_check(
+        mesh, results, repair_results, boundary, repaired_path, repair_record
+    );
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 1); // fix for coherently oriented
@@ -273,7 +280,10 @@ TEST_CASE( "test only fix positive volume", "[file_repair]" ) {
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
 
-    file_repair(mesh, results, repair_record, repaired_path);
+    // file_repair(mesh, results, repair_record, repaired_path);
+    file_repair_then_check(
+        mesh, results, repair_results, boundary, repaired_path, repair_record
+    );
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 0); // no fix for coherently oriented
@@ -290,7 +300,10 @@ TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
     loadMesh(mesh, filepath);
     file_check(mesh, results, boundary);
 
-    file_repair(mesh, results, repair_record, repaired_path);
+    // file_repair(mesh, results, repair_record, repaired_path);
+    file_repair_then_check(
+        mesh, results, repair_results, boundary, repaired_path, repair_record
+    );
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 1); // fix for coherenltly oriented
@@ -330,7 +343,10 @@ TEST_CASE( "test repair for hole", "[file_repair]" ) {
     file_check(mesh, results, boundary);
     REQUIRE( IsWaterTight(mesh) == false );
 
-    file_repair(mesh, results, repair_record, repaired_path);
+    // file_repair(mesh, results, repair_record, repaired_path);
+    file_repair_then_check(
+        mesh, results, repair_results, boundary, repaired_path, repair_record
+    );
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 0); // no fix for coherently oriented
@@ -357,7 +373,10 @@ TEST_CASE( "test repair for non manifold", "[file_repair]" ) {
     file_check(mesh, results, boundary);
     REQUIRE( IsWaterTight(mesh) == false );
 
-    file_repair(mesh, results, repair_record, repaired_path);
+    // file_repair(mesh, results, repair_record, repaired_path);
+    file_repair_then_check(
+        mesh, results, repair_results, boundary, repaired_path, repair_record
+    );
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[1] == 0); // no fix for coherently oriented
@@ -384,7 +403,10 @@ TEST_CASE( "test successful repair", "[file_repair]" ) {
     file_check(mesh, results, boundary);
     REQUIRE(results[12] == 0); // bad mesh
 
-    file_repair(mesh, results, repair_record, repaired_path);
+    // file_repair(mesh, results, repair_record, repaired_path);
+    file_repair_then_check(
+        mesh, results, repair_results, boundary, repaired_path, repair_record
+    );
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[6] == 1); // good repair
@@ -400,7 +422,10 @@ TEST_CASE( "test non-successful repair", "[file_repair]" ) {
     file_check(mesh, results, boundary);
     REQUIRE(results[12] == 0); // bad mesh
 
-    file_repair(mesh, results, repair_record, repaired_path);
+    // file_repair(mesh, results, repair_record, repaired_path);
+    file_repair_then_check(
+        mesh, results, repair_results, boundary, repaired_path, repair_record
+    );
 
     assert(repair_record[0] == 1);  // version 1
     REQUIRE(repair_record[6] == 0); // bad repair

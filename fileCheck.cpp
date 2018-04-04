@@ -308,7 +308,7 @@ void file_check(MyMesh & m, int* results, float* boundary) {
     if (numNonManifoldEdge == 0) {
         auto vpss = CountHoles(m);
         auto numHoles = vpss.size();
-        printf("number of holes %u\n", numHoles);
+        printf("number of holes %zu\n", numHoles);
         results[11] = numHoles;
     }
 
@@ -318,7 +318,7 @@ void file_check(MyMesh & m, int* results, float* boundary) {
 }
 
 int file_repair(
-        MyMesh & mesh, int* results, int* repair_record,
+        MyMesh & mesh,const int* results, int* repair_record,
         const std::string repaired_path
     ) {
 
@@ -419,6 +419,34 @@ int file_repair(
     return 0;
 }
 
+bool is_good_repair(const int* results, const int* repair_results, const int* repair_record) {
+    assert(results[0] == 4); // correct version
+    if (repair_results[12] != 1) // if it is not good mesh
+        return false;
+    if (results[9] != repair_results[9]) // require same number of shells
+        return false;
+    if (results[8] != repair_results[8]) // require same number of intersecting faces
+        return false;
+    return true;
+}
+
+void file_repair_then_check(
+        MyMesh & mesh, const int* results, int* repair_results, float* boundary,
+        const std::string repaired_path, int* repair_record
+    ) {
+    file_repair(mesh, results, repair_record, repaired_path);
+    assert(repair_record[0] == 1);
+
+    if (not repaired_path.empty())
+        vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+
+    loadMesh(mesh, repaired_path);
+
+    file_check(mesh, repair_results, boundary); // TODO: repair boundary
+
+    repair_record[6] = is_good_repair(results, repair_results, repair_record);
+}
+
 void output_report(FILE* report, int* results, float* boundary, int* repair_record) {
     printf("---------------writing report\n");
 
@@ -451,6 +479,7 @@ void output_report(FILE* report, int* results, float* boundary, int* repair_reco
     std::fprintf(report, "%d does_union\n",                repair_record[3]);
     std::fprintf(report, "%d does_rm_non_manif_faces\n",   repair_record[4]);
     std::fprintf(report, "%d does_hole_fix\n",             repair_record[5]);
+    std::fprintf(report, "%d is_good_repair\n",            repair_record[6]);
 }
 
 void file_repair_complex(const std::string repaired_path, MyMesh & mesh,
@@ -472,6 +501,7 @@ void file_repair_complex(const std::string repaired_path, MyMesh & mesh,
         // }
     // }
 }
+
 
 void file_check(const std::string filepath, int* results, float* boundary) {
     printf("reading file  %s\n",filepath.c_str());
@@ -656,31 +686,28 @@ int main( int argc, char *argv[] )
     }
     file_check(mesh, results, boundary);
 
-    int repair_record[6] = {
+    int repair_record[7] = {
         -1, // 0 repair version
         -1, // 1 fix CoherentlyOriented
         -1, // 2 fix not Positive Volume
         -1, // 3 attempt to fix the union, require human check
         -1, // 4 remove non manifold faces
-        -1  // 5 fix hole
+        -1, // 5 fix hole
+        -1  // 6 is good repair
     };
 
+    file_repair_then_check(mesh, results, repair_results, boundary, repaired_path, repair_record);
+
+    /*
     file_repair(mesh, results, repair_record, repaired_path);
 
     if (not repaired_path.empty())
         vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
 
-    // if (not repaired_path.empty() and not union_py_path.empty()) {
-        // std::printf("writing to path %s\n", repaired_path.c_str());
-        // file_repair_complex(repaired_path, mesh, results, repair_record, union_py_path); // writing to repaired path
-        // vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
-    // } else {
-        // std::printf("repaired path is empty, didn't do repair complex %s\n", repaired_path.c_str());
-    // }
-
     if (report_path.empty()) {
         std::printf("report_path is not provided, write to stdout\n");
     }
+    */
 
     FILE * report;
     if (report_path.empty())
@@ -689,11 +716,12 @@ int main( int argc, char *argv[] )
         report = std::fopen(report_path.c_str(), "w");
 
     output_report(report, results, boundary, repair_record);
-    std::fclose(report);
 
-    loadMesh(mesh, repaired_path);
-    std::printf("-------------------------- check for repair ----------\n");
-    file_check(mesh, repair_results, boundary);
+    // loadMesh(mesh, repaired_path);
+    // std::printf("-------------------------- check for repair ----------\n");
+    // file_check(mesh, repair_results, boundary);
+
+    // is_good_repair(results, repair_results, repair_record);
 
     FILE * repair_report;
     if (repaired_report_path.empty())
@@ -703,8 +731,6 @@ int main( int argc, char *argv[] )
 
     output_report(repair_report, repair_results, boundary, repair_record);
     std::fclose(repair_report);
-
-    exit(0);
 
     return 0;
 }
