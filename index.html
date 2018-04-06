@@ -8,8 +8,8 @@
 <script type="text/javascript">
 
     GLOBAL = {
-        "check":{},
-        "repair":{}
+        "report":{},
+        "prefix": "r_"
     }
 
     function uploaded() {
@@ -33,14 +33,12 @@
             );
 
             // update_from_result(check);
-            GLOBAL.check = {};
-            GLOBAL.repair = {};
-            parse_report("report.txt", GLOBAL.check);
-            parse_report("repair_report.txt", GLOBAL.repair);
-            read_report();
+            GLOBAL.report = {}; // empty useful for uploading one after the other
+            parse_report("report.txt", GLOBAL.report);
+            read_report(GLOBAL.report);
             console.log(GLOBAL);
 
-            blob_download(stl_name); // TODO: fix this
+            // blob_download(stl_name); // TODO: fix this
             // update_from_result(GLOBAL);
         } // fr.onload
     }
@@ -50,13 +48,12 @@
         res = res.split("\n");
         for (let i=0;i<res.length;i++) {
             let x = res[i];
-            console.log(x);
 
             x = x.split(" ");
 
             if (x.length < 2) continue;
 
-            const key = x[1];
+            let key = x[1];
             let value = x[0];
 
             if (value.includes(".")) { // HACK
@@ -65,37 +62,35 @@
                 value = parseInt(value);
             }
 
+            if (key in dict) key = GLOBAL.prefix + key;
+
             dict[key] = value;
         }
     }
 
-    function read_report() {
+    function read_report(d) {
         // clean HTML
         const table_id = "report_table";
         document.getElementById(table_id).innerHTML = "";
 
-            // add to html
-            // if (key.includes("min")
-                    // || key.includes("max")
-                    // || key.includes("area")
-                    // || (key.includes("volume") && !key.includes("is_pos"))
-               // ) {
-        const c = GLOBAL.check;
-        const r = GLOBAL.repair;
+        for (key in d) {
+            if (key.startsWith(GLOBAL.prefix)) continue;
 
-        for (key in GLOBAL.check) {
-            console.log(key);
+            const before = d[key];
+            const after = d[GLOBAL.prefix + key]
+
             const row = document.getElementsByTagName("template")[1];
             const key_HTML = row.content.querySelector(".key");
             key_HTML.innerHTML = key;
             const check_HTML = row.content.querySelector(".check");
-            check_HTML.innerHTML = c[key];
+            check_HTML.innerHTML = before;
             const repair_HTML = row.content.querySelector(".repair");
-            repair_HTML.innerHTML = r[key];
-            if (r[key] != c[key]) {
-                repair_HTML.innerHTML = "* " + r[key];
+            repair_HTML.innerHTML = after;
+
+            if (before != after) {
+                repair_HTML.innerHTML = "* " + after;
             } else {
-                repair_HTML.innerHTML = r[key];
+                repair_HTML.innerHTML = after;
             }
             const to_add = document.importNode(row.content, true);
             document.getElementById(table_id).appendChild(to_add);
