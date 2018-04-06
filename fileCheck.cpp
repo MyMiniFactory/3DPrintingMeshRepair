@@ -409,8 +409,9 @@ int check_repair_main(
 }
 
 extern "C" {
-    int js_check_repair(const std::string filepath) {
-        return check_repair_main(filepath, "repaired.stl", "repair_report.txt");
+    int js_check_repair(const char* filepath) {
+        std::string _filepath(filepath);
+        return check_repair_main(_filepath, "repaired.stl", "report.txt");
     }
 }
 
