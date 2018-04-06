@@ -51,18 +51,17 @@ typedef vcg::tri::Clean<MyMesh> Clean;
 
 bool loadMesh(MyMesh & mesh, const std::string filepath);
 
-void Boundary(MyMesh & mesh, float* boundary);
 float Volume(MyMesh & mesh);
 float Area(MyMesh & mesh);
 
-unsigned int NoDegenratedFaces(MyMesh & mesh);
-unsigned int NoDuplicateFaces(MyMesh & mesh);
+unsigned int NumDegenratedFaces(MyMesh & mesh);
+unsigned int NumDuplicateFaces(MyMesh & mesh);
 unsigned int NumIntersectingFaces(MyMesh & mesh);
 
 bool IsWaterTight(MyMesh & mesh);
 bool IsCoherentlyOrientedMesh(MyMesh & mesh);
 bool IsPositiveVolume(MyMesh & mesh);
-unsigned int numShell(MyMesh & mesh);
+unsigned int NumShell(MyMesh & mesh);
 bool IsGoodMesh(int* results);
 
 class checkResult_t {
@@ -119,12 +118,14 @@ class checkResult_t {
 
 };
 
+void Boundary(MyMesh & mesh, checkResult_t& boundary);
+
 class repairRecord_t {
 
     public:
 
     unsigned int version; // 0 repair version
-    bool fix_coherently_oriented; // 1 fix CoherentlyOriented
+    bool does_fix_coherently_oriented; // 1 fix CoherentlyOriented
     bool does_fix_positive_volume; // 2 fix not Positive Volume
     bool does_union = false; // 3 attempt to fix the union, require human check
     unsigned int n_non_manif_f_removed = 0; // 4 remove non manifold faces
@@ -134,7 +135,7 @@ class repairRecord_t {
     void output_report(FILE* report) const {
         assert(version == 1);
         std::fprintf(report, "%d repair_version\n",            version);
-        std::fprintf(report, "%d does_make_coherent_orient\n", fix_coherently_oriented);
+        std::fprintf(report, "%d does_make_coherent_orient\n", does_fix_coherently_oriented);
         std::fprintf(report, "%d does_flip_normal_outside\n",  does_fix_positive_volume);
         std::fprintf(report, "%d does_union\n",                does_union);
         std::fprintf(report, "%d does_rm_non_manif_faces\n",   n_non_manif_f_removed);
@@ -146,7 +147,7 @@ class repairRecord_t {
 checkResult_t file_check(MyMesh & m);
 
 extern "C" {
-    void file_check(const std::string filepath, int* results, float* boundary);
+    void file_check(const std::string filepath, int* results);
 }
 
 bool DoesFlipNormalOutside(MyMesh & mesh,
@@ -159,11 +160,11 @@ void repair_hole(
 );
 
 repairRecord_t file_repair(
-    MyMesh & mesh, checkResult_t check_r, const std::string repaired_path
+    MyMesh & mesh, const checkResult_t check_r, const std::string repaired_path
 );
 
-void file_repair_then_check(
-    MyMesh & mesh, const int* results, int* repair_results, float* boundary,
-    const std::string repaired_path, int* repair_record
+repairRecord_t file_repair_then_check(
+    MyMesh & mesh, const checkResult_t check_r, const std::string repaired_path,
+    FILE* report = stdout
 );
 #endif

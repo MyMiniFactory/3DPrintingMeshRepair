@@ -10,7 +10,7 @@ void Boundary(MyMesh & mesh, checkResult_t& r) {
     r.zmax = mesh.bbox.max.Z();
 }
 
-unsigned int NoDegenratedFaces(MyMesh & mesh) { // change mesh in-place
+unsigned int NumDegenratedFaces(MyMesh & mesh) { // change mesh in-place
     const int beforeNumFaces = mesh.FN();
 
     bool RemoveDegenerateFlag=true;
@@ -21,7 +21,7 @@ unsigned int NoDegenratedFaces(MyMesh & mesh) { // change mesh in-place
     return beforeNumFaces - afterNumFaces;
 }
 
-unsigned int NoDuplicateFaces(MyMesh & mesh) { // change mesh in-place
+unsigned int NumDuplicateFaces(MyMesh & mesh) { // change mesh in-place
     const int beforeNumFaces = mesh.FN();
 
     Clean::RemoveDuplicateFace(mesh); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
@@ -238,8 +238,8 @@ checkResult_t file_check(MyMesh & m) {
 
     r.version = 4; // set version number
 
-    r.n_degen_faces = NoDegenratedFaces(m);
-    r.n_duplicate_faces = NoDuplicateFaces(m);
+    r.n_degen_faces = NumDegenratedFaces(m);
+    r.n_duplicate_faces = NumDuplicateFaces(m);
 
     r.n_faces = m.FN();
     r.n_vertices = m.VN();
@@ -267,6 +267,8 @@ checkResult_t file_check(MyMesh & m) {
         auto vpss = CountHoles(m);
         auto numHoles = vpss.size();
         r.n_holes = numHoles;
+    } else {
+        r.n_holes = -1; // -1 indicates it cannot be runned
     }
 
     r.is_good_mesh = IsGoodMesh(r);
@@ -343,7 +345,7 @@ repairRecord_t file_repair(
     }
 
     bool doesMakeCoherentlyOriented = DoesMakeCoherentlyOriented(mesh, isWaterTight, isCoherentlyOriented);
-    r.fix_coherently_oriented = doesMakeCoherentlyOriented;
+    r.does_fix_coherently_oriented = doesMakeCoherentlyOriented;
 
     isCoherentlyOriented = IsCoherentlyOrientedMesh(mesh);
     bool isPositiveVolume = IsPositiveVolume(mesh);
@@ -374,7 +376,7 @@ bool IsGoodRepair(checkResult_t results, checkResult_t repair_results) {
     return true;
 }
 
-void file_repair_then_check(
+repairRecord_t file_repair_then_check(
         MyMesh & mesh, checkResult_t results, const std::string repaired_path,
         FILE* report
     ) {
@@ -392,6 +394,8 @@ void file_repair_then_check(
 
     repair_record.output_report(report);
     repair_results.output_report(report);
+
+    return repair_record;
 }
 
 void output_report(FILE* report, int* results, float* boundary, int* repair_record) {
