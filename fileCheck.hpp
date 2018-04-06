@@ -127,7 +127,6 @@ class repairRecord_t {
     unsigned int version; // 0 repair version
     bool does_fix_coherently_oriented; // 1 fix CoherentlyOriented
     bool does_fix_positive_volume; // 2 fix not Positive Volume
-    bool does_union = false; // 3 attempt to fix the union, require human check
     unsigned int n_non_manif_f_removed = 0; // 4 remove non manifold faces
     bool does_fix_hole = false; // 5 fix hole
     bool is_good_repair = false; // 6 is good repair
@@ -137,7 +136,6 @@ class repairRecord_t {
         std::fprintf(report, "%d repair_version\n",            version);
         std::fprintf(report, "%d does_make_coherent_orient\n", does_fix_coherently_oriented);
         std::fprintf(report, "%d does_flip_normal_outside\n",  does_fix_positive_volume);
-        std::fprintf(report, "%d does_union\n",                does_union);
         std::fprintf(report, "%d does_rm_non_manif_faces\n",   n_non_manif_f_removed);
         std::fprintf(report, "%d does_hole_fix\n",             does_fix_hole);
         std::fprintf(report, "%d is_good_repair\n",            is_good_repair);
