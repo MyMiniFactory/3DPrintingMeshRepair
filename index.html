@@ -6,45 +6,35 @@
 
 <script async type="text/javascript" src="filecheck.js"></script>
 <script type="text/javascript">
-
-    GLOBAL = {
+    `use strict`;
+    const GLOBAL = {
         "report":{},
         "prefix": "r_"
+    }
+
+
+    var worker = new Worker('worker.js');
+
+    worker.onmessage = function(e) {
+        console.log("index html on message");
+        const report = e.data.report;
+        if (report !== undefined) {
+            GLOBAL.report = {}; // empty useful for uploading one after the other
+            parse_report(report, GLOBAL.report);
+            read_report(GLOBAL.report);
+            console.log(GLOBAL);
+        }
     }
 
     function uploaded() {
         reset();
         var uploadform = document.getElementById("fileuploadform");
-        var filename = uploadform.files[0].name;
-        var fr = new FileReader();
-        fr.readAsArrayBuffer(uploadform.files[0]);
-
-        fr.onload = function (){
-            var stl_name = filename;
-
-            var data = new Uint8Array(fr.result); // base64 to Uint8 for emscripten
-
-            Module['FS_createDataFile'](".", stl_name, data, true, true);
-
-            Module.ccall("js_check_repair", // c function name
-                    undefined, // return
-                    ["string"], // param
-                    [stl_name]
-            );
-
-            // update_from_result(check);
-            GLOBAL.report = {}; // empty useful for uploading one after the other
-            parse_report("report.txt", GLOBAL.report);
-            read_report(GLOBAL.report);
-            console.log(GLOBAL);
-
-            // blob_download(stl_name); // TODO: fix this
-            // update_from_result(GLOBAL);
-        } // fr.onload
+        var blob = uploadform.files[0];
+        worker.postMessage({blob})
     }
 
-    function parse_report(report_name, dict) {
-        let res = Module['FS_readFile'](report_name, {encoding:'utf8'});
+    function parse_report(report_str, dict) {
+        let res = report_str;
         res = res.split("\n");
         for (let i=0;i<res.length;i++) {
             let x = res[i];
@@ -71,7 +61,7 @@
     function read_report(d) {
         // clean HTML
         const table_id = "report_table";
-        document.getElementById(table_id).innerHTML = "";
+        // document.getElementById(table_id).innerHTML = "";
 
         for (key in d) {
             if (key.startsWith(GLOBAL.prefix)) continue;
@@ -95,6 +85,10 @@
             const to_add = document.importNode(row.content, true);
             document.getElementById(table_id).appendChild(to_add);
         }
+        const seperator_span = document.createElement("span");
+        const seperator_text = document.createTextNode("===========");
+        seperator_span.appendChild(seperator_text);
+        document.getElementById(table_id).appendChild(seperator_span);
     }
 
     function blob_download(stl_name) {
