@@ -99,53 +99,53 @@ bool IsGoodMesh(checkResult_t r) {
 }
 
 
-std::vector<std::vector<vcg::Point3<float>>> CountHoles(MyMesh & m)
-{
-    vcg::tri::UpdateFlags<MyMesh>::FaceClearV(m);
-    std::vector<std::vector<vcg::Point3<float>>> vpss;
+// std::vector<std::vector<vcg::Point3<float>>> CountHoles(MyMesh & m)
+// {
+    // vcg::tri::UpdateFlags<MyMesh>::FaceClearV(m);
+    // std::vector<std::vector<vcg::Point3<float>>> vpss;
 
-    int loopNum=0;
-    for(auto fi=m.face.begin(); fi!=m.face.end();++fi) if(!fi->IsD())
-    {
-        for(int j=0;j<3;++j)
-        {
-            if(!fi->IsV() && vcg::face::IsBorder(*fi,j))
-            {
-                vcg::face::Pos<MyFace> startPos(&*fi,j);
-                vcg::face::Pos<MyFace> curPos=startPos;
+    // int loopNum=0;
+    // for(auto fi=m.face.begin(); fi!=m.face.end();++fi) if(!fi->IsD())
+    // {
+        // for(int j=0;j<3;++j)
+        // {
+            // if(!fi->IsV() && vcg::face::IsBorder(*fi,j))
+            // {
+                // vcg::face::Pos<MyFace> startPos(&*fi,j);
+                // vcg::face::Pos<MyFace> curPos=startPos;
 
-                std::vector<vcg::Point3<float>> vps;
+                // std::vector<vcg::Point3<float>> vps;
 
-                do
-                {
-                    auto curFace = curPos.F();
-                    curPos.NextB();
-                    curPos.F()->SetV();
-                    auto face = curPos.F();
+                // do
+                // {
+                    // auto curFace = curPos.F();
+                    // curPos.NextB();
+                    // curPos.F()->SetV();
+                    // auto face = curPos.F();
 
-                    auto edgeIndex = curPos.E();
-                    if (edgeIndex == 0) {
-                        vps.push_back(face->cV(0)->cP());
-                        vps.push_back(face->cV(1)->cP());
-                    } else if (edgeIndex == 1) {
-                        vps.push_back(face->cV(1)->cP());
-                        vps.push_back(face->cV(2)->cP());
-                    } else {
-                        assert(edgeIndex == 2);
-                        vps.push_back(face->cV(2)->cP());
-                        vps.push_back(face->cV(0)->cP());
-                    }
+                    // auto edgeIndex = curPos.E();
+                    // if (edgeIndex == 0) {
+                        // vps.push_back(face->cV(0)->cP());
+                        // vps.push_back(face->cV(1)->cP());
+                    // } else if (edgeIndex == 1) {
+                        // vps.push_back(face->cV(1)->cP());
+                        // vps.push_back(face->cV(2)->cP());
+                    // } else {
+                        // assert(edgeIndex == 2);
+                        // vps.push_back(face->cV(2)->cP());
+                        // vps.push_back(face->cV(0)->cP());
+                    // }
 
-                }
-                while(curPos!=startPos);
-                vpss.push_back(vps);
-                ++loopNum;
-            }
-        }
-    }
-    // return loopNum;
-    return vpss;
-}
+                // }
+                // while(curPos!=startPos);
+                // vpss.push_back(vps);
+                // ++loopNum;
+            // }
+        // }
+    // }
+    // // return loopNum;
+    // return vpss;
+// }
 
 void repair_hole(
         MyMesh & mesh, std::vector<std::vector<vcg::Point3<float>>> vpss
@@ -241,8 +241,7 @@ checkResult_t file_check(MyMesh & m) {
     r.n_non_manifold_edges = Clean::CountNonManifoldEdgeFF(m);
 
     if (r.n_non_manifold_edges == 0) {
-        auto vpss = CountHoles(m);
-        auto numHoles = vpss.size();
+        auto numHoles = Clean::CountHoles(m);
         r.n_holes = numHoles;
     } else {
         r.n_holes = -1; // -1 indicates it cannot be runned
@@ -302,26 +301,26 @@ repairRecord_t file_repair(
         r.does_fix_hole = 0;
     }
 
-    if (!isWaterTight) {
-        auto vpps = CountHoles(mesh);
-        const int numHoles = vpps.size();
-        repair_hole(mesh, vpps);
-        if (numHoles > 0) {
-            r.does_fix_hole = 1;
-            Clean::RemoveDuplicateVertex(mesh, true);
+    // if (!isWaterTight) {
+        // auto vpps = CountHoles(mesh);
+        // const int numHoles = vpps.size();
+        // repair_hole(mesh, vpps);
+        // if (numHoles > 0) {
+            // r.does_fix_hole = 1;
+            // Clean::RemoveDuplicateVertex(mesh, true);
 
-            // reload mesh
-            vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
-            MyMesh repaired_mesh;
-            loadMesh(mesh, repaired_path);
-            vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
+            // // reload mesh
+            // vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+            // MyMesh repaired_mesh;
+            // loadMesh(mesh, repaired_path);
+            // vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
 
-            isWaterTight = IsWaterTight(mesh);
-            isCoherentlyOriented = IsCoherentlyOrientedMesh(mesh);
-        }
-    } else {
-        r.does_fix_hole = 0;
-    }
+            // isWaterTight = IsWaterTight(mesh);
+            // isCoherentlyOriented = IsCoherentlyOrientedMesh(mesh);
+        // }
+    // } else {
+    r.does_fix_hole = 0;
+    // }
 
     bool doesMakeCoherentlyOriented = DoesMakeCoherentlyOriented(mesh, isWaterTight, isCoherentlyOriented);
     r.does_fix_coherently_oriented = doesMakeCoherentlyOriented;
