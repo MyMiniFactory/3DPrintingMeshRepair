@@ -21,7 +21,7 @@ UNITTESTCXXFLAGS := -I ./unittest/catch \
 
 EM_UNITTESTCXXFLAGS := -s DEMANGLE_SUPPORT=1 --embed-file ./unittest/meshes/@./unittest/meshes/
 
-FILECHECK_CPP := fileCheck.cpp
+FILECHECK_CPP := fileCheck.cpp vcglib/wrap/ply/plylib.cpp
 UNITTEST_CPP := unittest/fileCheckUnittest.cpp
 
 EMCC := em++

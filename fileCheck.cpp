@@ -14,7 +14,7 @@ unsigned int NumDegenratedFaces(MyMesh & mesh) { // change mesh in-place
     const int beforeNumFaces = mesh.FN();
 
     bool RemoveDegenerateFlag=true;
-    Clean::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
+    Clean_t::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
 
     const int afterNumFaces = mesh.FN();
 
@@ -24,7 +24,7 @@ unsigned int NumDegenratedFaces(MyMesh & mesh) { // change mesh in-place
 unsigned int NumDuplicateFaces(MyMesh & mesh) { // change mesh in-place
     const int beforeNumFaces = mesh.FN();
 
-    Clean::RemoveDuplicateFace(mesh); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
+    Clean_t::RemoveDuplicateFace(mesh); // remove degenerateFace, removeDegenerateEdge, RemoveDuplicateEdge
 
     const int afterNumFaces = mesh.FN();
 
@@ -34,7 +34,7 @@ unsigned int NumDuplicateFaces(MyMesh & mesh) { // change mesh in-place
 unsigned int NumIntersectingFaces(MyMesh & mesh) { // change mesh in-place
 
     std::vector<MyFace *> IntersectingFaces;
-    Clean::SelfIntersections(mesh, IntersectingFaces);
+    Clean_t::SelfIntersections(mesh, IntersectingFaces);
 
     return IntersectingFaces.size();
 
@@ -55,12 +55,12 @@ unsigned int NumIntersectingFaces(MyMesh & mesh) { // change mesh in-place
 }
 
 bool IsWaterTight(MyMesh & mesh) {
-    return Clean::IsWaterTight(mesh);
+    return Clean_t::IsWaterTight(mesh);
 }
 
 
 bool IsCoherentlyOrientedMesh(MyMesh & mesh) {
-    return Clean::IsCoherentlyOrientedMesh(mesh);
+    return Clean_t::IsCoherentlyOrientedMesh(mesh);
 }
 
 float Volume(MyMesh & mesh) {
@@ -81,7 +81,7 @@ float Area(MyMesh & mesh) {
 }
 
 unsigned int NumShell(MyMesh & mesh) {
-    return Clean::CountConnectedComponents(mesh);
+    return Clean_t::CountConnectedComponents(mesh);
 }
 
 bool IsGoodMesh(checkResult_t r) {
@@ -99,53 +99,53 @@ bool IsGoodMesh(checkResult_t r) {
 }
 
 
-// std::vector<std::vector<vcg::Point3<float>>> CountHoles(MyMesh & m)
-// {
-    // vcg::tri::UpdateFlags<MyMesh>::FaceClearV(m);
-    // std::vector<std::vector<vcg::Point3<float>>> vpss;
+std::vector<std::vector<vcg::Point3<float>>> CountHoles(MyMesh & m)
+{
+    vcg::tri::UpdateFlags<MyMesh>::FaceClearV(m);
+    std::vector<std::vector<vcg::Point3<float>>> vpss;
 
-    // int loopNum=0;
-    // for(auto fi=m.face.begin(); fi!=m.face.end();++fi) if(!fi->IsD())
-    // {
-        // for(int j=0;j<3;++j)
-        // {
-            // if(!fi->IsV() && vcg::face::IsBorder(*fi,j))
-            // {
-                // vcg::face::Pos<MyFace> startPos(&*fi,j);
-                // vcg::face::Pos<MyFace> curPos=startPos;
+    int loopNum=0;
+    for(auto fi=m.face.begin(); fi!=m.face.end();++fi) if(!fi->IsD())
+    {
+        for(int j=0;j<3;++j)
+        {
+            if(!fi->IsV() && vcg::face::IsBorder(*fi,j))
+            {
+                vcg::face::Pos<MyFace> startPos(&*fi,j);
+                vcg::face::Pos<MyFace> curPos=startPos;
 
-                // std::vector<vcg::Point3<float>> vps;
+                std::vector<vcg::Point3<float>> vps;
 
-                // do
-                // {
-                    // auto curFace = curPos.F();
-                    // curPos.NextB();
-                    // curPos.F()->SetV();
-                    // auto face = curPos.F();
+                do
+                {
+                    auto curFace = curPos.F();
+                    curPos.NextB();
+                    curPos.F()->SetV();
+                    auto face = curPos.F();
 
-                    // auto edgeIndex = curPos.E();
-                    // if (edgeIndex == 0) {
-                        // vps.push_back(face->cV(0)->cP());
-                        // vps.push_back(face->cV(1)->cP());
-                    // } else if (edgeIndex == 1) {
-                        // vps.push_back(face->cV(1)->cP());
-                        // vps.push_back(face->cV(2)->cP());
-                    // } else {
-                        // assert(edgeIndex == 2);
-                        // vps.push_back(face->cV(2)->cP());
-                        // vps.push_back(face->cV(0)->cP());
-                    // }
+                    auto edgeIndex = curPos.E();
+                    if (edgeIndex == 0) {
+                        vps.push_back(face->cV(0)->cP());
+                        vps.push_back(face->cV(1)->cP());
+                    } else if (edgeIndex == 1) {
+                        vps.push_back(face->cV(1)->cP());
+                        vps.push_back(face->cV(2)->cP());
+                    } else {
+                        assert(edgeIndex == 2);
+                        vps.push_back(face->cV(2)->cP());
+                        vps.push_back(face->cV(0)->cP());
+                    }
 
-                // }
-                // while(curPos!=startPos);
-                // vpss.push_back(vps);
-                // ++loopNum;
-            // }
-        // }
-    // }
-    // // return loopNum;
-    // return vpss;
-// }
+                }
+                while(curPos!=startPos);
+                vpss.push_back(vps);
+                ++loopNum;
+            }
+        }
+    }
+    // return loopNum;
+    return vpss;
+}
 
 void repair_hole(
         MyMesh & mesh, std::vector<std::vector<vcg::Point3<float>>> vpss
@@ -174,7 +174,7 @@ void repair_hole(
 
 
 bool loadMesh(MyMesh & mesh, const std::string filepath) {
-
+    auto t1 = std::chrono::high_resolution_clock::now();
     int a = 2; // TODO: understand what this is
 
     std::string extension;
@@ -200,17 +200,28 @@ bool loadMesh(MyMesh & mesh, const std::string filepath) {
             printf("Error reading file  %s with Critical Error %s\n", filepath.c_str(), error_message);
             return false;
         }
+    } else if (extension == "ply") {
+        if(vcg::tri::io::ImporterPLY<MyMesh>::Open(mesh, filepath.c_str(),  a))
+        {
+            printf("Error reading file  %s\n", filepath.c_str());
+            return false;
+        }
     } else {
         return false;
     }
 
     bool RemoveDegenerateFlag=false;
-    Clean::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag);
+    Clean_t::RemoveDuplicateVertex(mesh, RemoveDegenerateFlag);
 
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::cout << "loadMesh() took "
+        << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
+        << " milliseconds\n";
     return true;
 }
 
 checkResult_t file_check(MyMesh & m) {
+    auto t1 = std::chrono::high_resolution_clock::now();
     checkResult_t r;
 
     r.version = 4; // set version number
@@ -238,10 +249,10 @@ checkResult_t file_check(MyMesh & m) {
     r.n_shells = NumShell(m);
 
     // non manifold edges in a mesh, e.g. the edges where there are more than 2 incident faces
-    r.n_non_manifold_edges = Clean::CountNonManifoldEdgeFF(m);
+    r.n_non_manifold_edges = Clean_t::CountNonManifoldEdgeFF(m);
 
     if (r.n_non_manifold_edges == 0) {
-        auto numHoles = Clean::CountHoles(m);
+        auto numHoles = Clean_t::CountHoles(m);
         r.n_holes = numHoles;
     } else {
         r.n_holes = -1; // -1 indicates it cannot be runned
@@ -249,12 +260,16 @@ checkResult_t file_check(MyMesh & m) {
 
     r.is_good_mesh = IsGoodMesh(r);
 
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::cout << "file_check() took "
+        << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
+        << " milliseconds\n";
     return r;
 }
 
 bool DoesFlipNormalOutside(MyMesh & mesh, bool isWaterTight, bool isCoherentlyOriented, bool isPositiveVolume) {
     if (isWaterTight && isCoherentlyOriented && not isPositiveVolume) {
-        Clean::FlipMesh(mesh);
+        Clean_t::FlipMesh(mesh);
         return true;
     } else {
         return false;
@@ -265,7 +280,7 @@ bool DoesMakeCoherentlyOriented(MyMesh & mesh, bool isWaterTight, bool isCoheren
     if (isWaterTight && not isCoherentlyOriented) {
         bool isOriented = true;
         bool isOrientable = true;
-        Clean::OrientCoherentlyMesh(mesh, isOriented, isOrientable);
+        Clean_t::OrientCoherentlyMesh(mesh, isOriented, isOrientable);
         return true;
     } else {
         return false;
@@ -276,6 +291,7 @@ repairRecord_t file_repair(
         MyMesh & mesh, checkResult_t check_r, const std::string repaired_path
     ) {
 
+    auto t1 = std::chrono::high_resolution_clock::now();
     repairRecord_t r;
 
     r.version = 1; // version 1 of file repair
@@ -287,10 +303,10 @@ repairRecord_t file_repair(
     bool isCoherentlyOriented = check_r.is_coherently_oriented;
 
     if (!isWaterTight and numNonManifoldEdge > 0) {
-        r.n_non_manif_f_removed = Clean::RemoveNonManifoldFace(mesh);
+        r.n_non_manif_f_removed = Clean_t::RemoveNonManifoldFace(mesh);
 
         // reload mesh
-        vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+        vcg::tri::io::ExporterPLY<MyMesh>::Save(mesh, repaired_path.c_str());
         MyMesh repaired_mesh;
         loadMesh(mesh, repaired_path);
         vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
@@ -298,29 +314,29 @@ repairRecord_t file_repair(
         isWaterTight = IsWaterTight(mesh);
         isCoherentlyOriented = IsCoherentlyOrientedMesh(mesh);
     } else {
-        r.does_fix_hole = 0;
+        r.n_hole_filled = 0;
     }
 
-    // if (!isWaterTight) {
-        // auto vpps = CountHoles(mesh);
-        // const int numHoles = vpps.size();
-        // repair_hole(mesh, vpps);
-        // if (numHoles > 0) {
-            // r.does_fix_hole = 1;
-            // Clean::RemoveDuplicateVertex(mesh, true);
+    if (!isWaterTight) {
+        auto vpps = CountHoles(mesh);
+        const int numHoles = vpps.size();
+        repair_hole(mesh, vpps);
+        if (numHoles > 0) {
+            r.n_hole_filled = numHoles;
+            Clean_t::RemoveDuplicateVertex(mesh, true);
 
-            // // reload mesh
-            // vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
-            // MyMesh repaired_mesh;
-            // loadMesh(mesh, repaired_path);
-            // vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
+            // reload mesh
+            vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+            MyMesh repaired_mesh;
+            loadMesh(mesh, repaired_path);
+            vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
 
-            // isWaterTight = IsWaterTight(mesh);
-            // isCoherentlyOriented = IsCoherentlyOrientedMesh(mesh);
-        // }
-    // } else {
-    r.does_fix_hole = 0;
-    // }
+            isWaterTight = IsWaterTight(mesh);
+            isCoherentlyOriented = IsCoherentlyOrientedMesh(mesh);
+        }
+    } else {
+        r.n_hole_filled = 0;
+    }
 
     bool doesMakeCoherentlyOriented = DoesMakeCoherentlyOriented(mesh, isWaterTight, isCoherentlyOriented);
     r.does_fix_coherently_oriented = doesMakeCoherentlyOriented;
@@ -335,6 +351,10 @@ repairRecord_t file_repair(
     bool doesFlipNormalOutside = DoesFlipNormalOutside(mesh, isWaterTight, isCoherentlyOriented, isPositiveVolume);
     r.does_fix_positive_volume = doesFlipNormalOutside;
 
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::cout << "file_repair() took "
+        << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
+        << " milliseconds\n";
     return r;
 }
 
@@ -357,7 +377,7 @@ repairRecord_t file_repair_then_check(
     assert(repair_record.version == 1);
 
     if (not repaired_path.empty())
-        vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+        vcg::tri::io::ExporterPLY<MyMesh>::Save(mesh, repaired_path.c_str());
 
     loadMesh(mesh, repaired_path);
 
@@ -410,7 +430,7 @@ int check_repair_main(
 extern "C" {
     int js_check_repair(const char* filepath) {
         std::string _filepath(filepath);
-        return check_repair_main(_filepath, "repaired.stl", "report.txt");
+        return check_repair_main(_filepath, "repaired.ply", "report.txt");
     }
 }
 

@@ -10,9 +10,13 @@
 
 #include <vcg/complex/complex.h>
 #include <vcg/complex/algorithms/clean.h>
-#include <wrap/io_trimesh/import_stl.h>
+
 #include <wrap/io_trimesh/import_obj.h>
+#include <wrap/io_trimesh/import_stl.h>
 #include <wrap/io_trimesh/export_stl.h>
+#include <wrap/io_trimesh/import_ply.h>
+#include <wrap/io_trimesh/export_ply.h>
+
 #include <vcg/complex/algorithms/inertia.h>
 #include <vcg/complex/algorithms/hole.h>
 
@@ -22,6 +26,7 @@
 #include <array>
 #include <stdio.h>
 #include <stdlib.h>
+#include <chrono>
 
 class MyVertex; class MyFace; class MyEdge;
 struct MyUsedTypes : public vcg::UsedTypes<vcg::Use<MyVertex>   ::AsVertexType,
@@ -46,7 +51,7 @@ class MyEdge: public vcg::Edge< MyUsedTypes,
 
 class MyMesh    : public vcg::tri::TriMesh< std::vector<MyVertex>, std::vector<MyFace> , std::vector<MyEdge> > {};
 
-typedef vcg::tri::Clean<MyMesh> Clean;
+typedef vcg::tri::Clean<MyMesh> Clean_t;
 
 
 bool loadMesh(MyMesh & mesh, const std::string filepath);
@@ -128,7 +133,7 @@ class repairRecord_t {
     bool does_fix_coherently_oriented; // 1 fix CoherentlyOriented
     bool does_fix_positive_volume; // 2 fix not Positive Volume
     unsigned int n_non_manif_f_removed = 0; // 4 remove non manifold faces
-    bool does_fix_hole = false; // 5 fix hole
+    unsigned int n_hole_filled = 0; // 5 fix hole
     bool is_good_repair = false; // 6 is good repair
 
     void output_report(FILE* report) const {
@@ -137,7 +142,7 @@ class repairRecord_t {
         std::fprintf(report, "%d does_make_coherent_orient\n", does_fix_coherently_oriented);
         std::fprintf(report, "%d does_flip_normal_outside\n",  does_fix_positive_volume);
         std::fprintf(report, "%d does_rm_non_manif_faces\n",   n_non_manif_f_removed);
-        std::fprintf(report, "%d does_hole_fix\n",             does_fix_hole);
+        std::fprintf(report, "%d does_hole_fix\n",             n_hole_filled);
         std::fprintf(report, "%d is_good_repair\n",            is_good_repair);
     }
 };
