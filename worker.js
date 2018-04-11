@@ -19,6 +19,7 @@ function check_repair(blob) {
         console.log("unlinking file");
         Module.FS_unlink(last_file_name);
     }
+    last_file_name = filename;
 
     var fr = new FileReader();
     fr.readAsArrayBuffer(blob);
