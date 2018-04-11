@@ -203,8 +203,8 @@ bool loadMesh(MyMesh & mesh, const std::string filepath) {
     } else if (extension == "ply") {
         if(vcg::tri::io::ImporterPLY<MyMesh>::Open(mesh, filepath.c_str(),  a))
         {
-            printf("Error reading file  %s\n", filepath.c_str());
-            return false;
+            // printf("Error reading file  %s\n", filepath.c_str());
+            // return false; // TODO: understand this
         }
     } else {
         return false;
@@ -379,9 +379,10 @@ repairRecord_t file_repair_then_check(
     if (not repaired_path.empty())
         vcg::tri::io::ExporterPLY<MyMesh>::Save(mesh, repaired_path.c_str());
 
-    loadMesh(mesh, repaired_path);
+    MyMesh repaired_mesh;
+    loadMesh(repaired_mesh, repaired_path);
 
-    auto repair_results = file_check(mesh); // TODO: repair boundary
+    auto repair_results = file_check(repaired_mesh); // TODO: repair boundary
 
     repair_record.is_good_repair = IsGoodRepair(results, repair_results);
 
@@ -445,7 +446,7 @@ int main( int argc, char *argv[] )
         filepath = argv[1];
     }
 
-    std::string repaired_path = "./out/repaired_perfect.stl";
+    std::string repaired_path = "./out/repaired_perfect.ply";
     if (argc >= 3) {
         repaired_path = argv[2];
     } else {
