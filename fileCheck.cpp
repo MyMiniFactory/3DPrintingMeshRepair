@@ -99,10 +99,11 @@ bool IsGoodMesh(checkResult_t r) {
 }
 
 
-std::vector<std::vector<vcg::Point3<float>>> CountHoles(MyMesh & m)
+// std::vector<std::vector<vcg::Point3<float>>> CountHoles(MyMesh & m)
+int CountHoles(MyMesh & m)
 {
     vcg::tri::UpdateFlags<MyMesh>::FaceClearV(m);
-    std::vector<std::vector<vcg::Point3<float>>> vpss;
+    // std::vector<std::vector<vcg::Point3<float>>> vpss;
 
     int loopNum=0;
     for(auto fi=m.face.begin(); fi!=m.face.end();++fi) if(!fi->IsD())
@@ -121,8 +122,8 @@ std::vector<std::vector<vcg::Point3<float>>> CountHoles(MyMesh & m)
                     auto curFace = curPos.F();
                     curPos.NextB();
                     curPos.F()->SetV();
+                    /*
                     auto face = curPos.F();
-
                     auto edgeIndex = curPos.E();
                     if (edgeIndex == 0) {
                         vps.push_back(face->cV(0)->cP());
@@ -135,18 +136,20 @@ std::vector<std::vector<vcg::Point3<float>>> CountHoles(MyMesh & m)
                         vps.push_back(face->cV(2)->cP());
                         vps.push_back(face->cV(0)->cP());
                     }
-
+                    */
                 }
                 while(curPos!=startPos);
-                vpss.push_back(vps);
+                // vpss.push_back(vps);
                 ++loopNum;
             }
         }
     }
-    // return loopNum;
-    return vpss;
+    return loopNum;
+    // return vpss;
 }
 
+// TODO: vpss is a hack, this is not a VCG way
+/*
 void repair_hole(
         MyMesh & mesh, std::vector<std::vector<vcg::Point3<float>>> vpss
     ) {
@@ -171,15 +174,37 @@ void repair_hole(
         }
     }
 }
+*/
 
+bool callback(int percent, const char *str) {
+    std::cout << "str: " << str << " " << percent << "%\r\n";
+    return true;
+}
+
+// holesize is compared with < in the hole.h
+int repair_hole(MyMesh & mesh, int holeSize = 5) {
+    std::cout << "------------------hole repairing before face count " << mesh.FN() << "\n";
+    auto hole_count = vcg::tri::Hole<MyMesh>::EarCuttingFill<vcg::tri::TrivialEar<MyMesh> >(mesh,holeSize,false,callback);
+
+    vcg::tri::UpdateFlags<MyMesh>::FaceBorderFromFF(mesh);
+    assert(vcg::tri::Clean<MyMesh>::IsFFAdjacencyConsistent(mesh));
+
+    std::cout << "--------number of holes " << hole_count << "\n";
+    std::cout << "-------- after number of faces" << mesh.FN() << "\n";
+    return hole_count;
+}
+
+const std::string extension_lower(std::string filepath) {
+    std::string extension(filepath.substr(filepath.find_last_of('.') + 1));
+    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+    return extension;
+}
 
 bool loadMesh(MyMesh & mesh, const std::string filepath) {
     auto t1 = std::chrono::high_resolution_clock::now();
     int a = 2; // TODO: understand what this is
 
-    std::string extension;
-    extension = filepath.substr(filepath.find_last_of('.') + 1);
-    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+    std::string extension = extension_lower(filepath);
 
     if (extension == "stl") {
         if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(),  a))
@@ -318,9 +343,7 @@ repairRecord_t file_repair(
     }
 
     if (!isWaterTight) {
-        auto vpps = CountHoles(mesh);
-        const int numHoles = vpps.size();
-        repair_hole(mesh, vpps);
+        int numHoles = repair_hole(mesh); // new repair hole
         if (numHoles > 0) {
             r.n_hole_filled = numHoles;
             Clean_t::RemoveDuplicateVertex(mesh, true);
@@ -449,6 +472,7 @@ int main( int argc, char *argv[] )
     std::string repaired_path = "./out/repaired_perfect.ply";
     if (argc >= 3) {
         repaired_path = argv[2];
+        assert(extension_lower(repaired_path)  == "ply");
     } else {
         printf("repaired path is given writing to %s\n", repaired_path.c_str());
     }

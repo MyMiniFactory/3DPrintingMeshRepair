@@ -379,3 +379,41 @@ TEST_CASE( "test non-successful repair", "[file_repair]" ) {
     assert(repair_record.version == 1);  // version 1
     REQUIRE(repair_record.is_good_repair == 0); // bad repair
 }
+
+TEST_CASE( "test repair hole with 4 edges", "[file_repair]" ) {
+    MyMesh mesh;
+    auto filepath = meshPath+"2MissingFaces.stl";
+
+    loadMesh(mesh, filepath);
+
+    results = file_check(mesh);
+    repair_record = file_repair_then_check(mesh, results, repaired_path);
+    assert(repair_record.version == 1);  // version 1
+    REQUIRE(repair_record.n_hole_filled == 1); // good repair
+}
+
+TEST_CASE( "test not repair hole with more than 5 edges", "[file_repair]" ) {
+    MyMesh mesh;
+    auto filepath = meshPath+"3MissingFaces.stl";
+
+    loadMesh(mesh, filepath);
+
+    results = file_check(mesh);
+    repair_record = file_repair_then_check(mesh, results, repaired_path);
+
+    assert(repair_record.version == 1);  // version 1
+    REQUIRE(repair_record.n_hole_filled == 0); // good repair
+}
+
+TEST_CASE( "test repair hole with more than 1 hole", "[file_repair]" ) {
+    MyMesh mesh;
+    auto filepath = meshPath+"2Holes.stl";
+
+    loadMesh(mesh, filepath);
+
+    results = file_check(mesh);
+    repair_record = file_repair_then_check(mesh, results, repaired_path);
+
+    assert(repair_record.version == 1);  // version 1
+    REQUIRE(repair_record.n_hole_filled == 2); // good repair
+}
