@@ -1,4 +1,5 @@
 self.addEventListener('message', function(e) {
+    console.log("worker");
     const blob = e.data.blob;
     if (blob === undefined) {
         console.log("Unknown message from html");
@@ -29,13 +30,18 @@ function check_repair(blob) {
 
         Module['FS_createDataFile'](".", filename, data, true, true);
 
+        console.time("js_c_r");
         Module.ccall("js_check_repair", // c function name
                 undefined, // return
                 ["string"], // param
                 [filename]
         );
+        console.timeEnd("js_c_r");
 
         const report_str = Module.FS_readFile("report.txt", {encoding:'utf8'});
-        self.postMessage({"report": report_str});
+        const ply_binary = Module.FS_readFile("repaired.ply");
+        const blob = new Blob([ply_binary], {type: 'application/sla'});
+
+        self.postMessage({"report": report_str, "blob": blob, "name": filename});
     } // fr.onload
 }

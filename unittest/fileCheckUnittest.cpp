@@ -6,7 +6,7 @@
 std::string meshPath = "./unittest/meshes/";
 checkResult_t results, repair_results;
 repairRecord_t repair_record;
-const auto repaired_path = meshPath+"repaired.stl";
+const auto repaired_path = meshPath+"repaired.ply";
 
 TEST_CASE( "test successful loadMesh", "[file_check]" ) {
     MyMesh mesh;
@@ -215,7 +215,7 @@ TEST_CASE( "test no file repair", "[file_repair]" ) {
     REQUIRE(repair_record.does_fix_coherently_oriented == 0); // no fix coherently oriented
     REQUIRE(repair_record.does_fix_positive_volume == 0); // no fix negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 0); // no fix for remove non manifold
-    REQUIRE(repair_record.does_fix_hole == 0); // no fix hole
+    REQUIRE(repair_record.n_hole_filled == 0); // no fix hole
     REQUIRE(repair_record.is_good_repair == 1); // good repair
     REQUIRE(results.is_good_mesh == 1); // good mesh
 }
@@ -232,7 +232,7 @@ TEST_CASE( "test fix volume and coherent oriented", "[file_repair]" ) {
     REQUIRE(repair_record.does_fix_coherently_oriented == true); // fix for coherently oriented
     REQUIRE(repair_record.does_fix_positive_volume == true); // fix for negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 0); // no fix for remove non manifold
-    REQUIRE(repair_record.does_fix_hole == 0); // no fix for hole
+    REQUIRE(repair_record.n_hole_filled == 0); // no fix for hole
     REQUIRE(repair_record.is_good_repair == 1); // good repair
     REQUIRE(results.is_good_mesh == 0); // bad mesh
 }
@@ -250,7 +250,7 @@ TEST_CASE( "test only fix positive volume", "[file_repair]" ) {
     REQUIRE(repair_record.does_fix_coherently_oriented == 0); // no fix for coherently oriented
     REQUIRE(repair_record.does_fix_positive_volume == 1); // fix for negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 0); // no fix for remove non manifold
-    REQUIRE(repair_record.does_fix_hole == 0); // no fix for hole
+    REQUIRE(repair_record.n_hole_filled == 0); // no fix for hole
     REQUIRE(repair_record.is_good_repair == 1); // good repair
     REQUIRE(results.is_good_mesh == 0); // bad mesh
 }
@@ -268,7 +268,7 @@ TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
     REQUIRE(repair_record.does_fix_coherently_oriented == 1); // fix for coherenltly oriented
     REQUIRE(repair_record.does_fix_positive_volume == 0); // fix for negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 0); // no fix for remove non manifold
-    REQUIRE(repair_record.does_fix_hole == 0); // no fix for hole
+    REQUIRE(repair_record.n_hole_filled == 0); // no fix for hole
     REQUIRE(repair_record.is_good_repair == 1); // good repair
     REQUIRE(results.is_good_mesh == 0); // bad mesh
 }
@@ -307,7 +307,7 @@ TEST_CASE( "test repair for hole", "[file_repair]" ) {
     REQUIRE(repair_record.does_fix_coherently_oriented == 0); // no fix for coherently oriented
     REQUIRE(repair_record.does_fix_positive_volume == 0); // fix for negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 0); // no fix for remove non manifold
-    REQUIRE(repair_record.does_fix_hole == 1); // no fix for hole
+    REQUIRE(repair_record.n_hole_filled == 1); // no fix for hole
     REQUIRE(repair_record.is_good_repair == 1); // good repair
     REQUIRE(results.is_good_mesh == 0); // bad mesh
 
@@ -335,7 +335,7 @@ TEST_CASE( "test repair for non manifold", "[file_repair]" ) {
     REQUIRE(repair_record.does_fix_coherently_oriented == 0); // no fix for coherently oriented
     REQUIRE(repair_record.does_fix_positive_volume == 0); // fix for negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 3); // remove 3 non manifold faces
-    REQUIRE(repair_record.does_fix_hole == 0); // no fix for hole
+    REQUIRE(repair_record.n_hole_filled == 0); // no fix for hole
     REQUIRE(repair_record.is_good_repair == 1); // good repair
     REQUIRE(results.is_good_mesh == 0); // bad mesh
 
