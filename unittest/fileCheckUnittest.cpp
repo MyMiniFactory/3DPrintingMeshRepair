@@ -294,7 +294,7 @@ TEST_CASE( "test single shell", "[file_repair]" ) {
 TEST_CASE( "test repair for hole", "[file_repair]" ) {
 
     MyMesh mesh;
-    auto filepath = meshPath+"2MissingFaces.stl";
+    auto filepath = meshPath+"2MissingFacesSphereWithLargeCube.stl";
 
     loadMesh(mesh, filepath);
     results = file_check(mesh);
@@ -349,7 +349,7 @@ TEST_CASE( "test repair for non manifold", "[file_repair]" ) {
 TEST_CASE( "test successful repair", "[file_repair]" ) {
 
     MyMesh mesh;
-    auto filepath = meshPath+"2MissingFaces.stl";
+    auto filepath = meshPath+"2MissingFacesSphereWithLargeCube.stl";
 
     loadMesh(mesh, filepath);
 
@@ -382,7 +382,7 @@ TEST_CASE( "test non-successful repair", "[file_repair]" ) {
 
 TEST_CASE( "test repair hole with 4 edges", "[file_repair]" ) {
     MyMesh mesh;
-    auto filepath = meshPath+"2MissingFaces.stl";
+    auto filepath = meshPath+"2MissingFacesSphereWithLargeCube.stl";
 
     loadMesh(mesh, filepath);
 
@@ -392,22 +392,9 @@ TEST_CASE( "test repair hole with 4 edges", "[file_repair]" ) {
     REQUIRE(repair_record.n_hole_filled == 1); // good repair
 }
 
-TEST_CASE( "test not repair hole with more than 5 edges", "[file_repair]" ) {
-    MyMesh mesh;
-    auto filepath = meshPath+"3MissingFaces.stl";
-
-    loadMesh(mesh, filepath);
-
-    results = file_check(mesh);
-    repair_record = file_repair_then_check(mesh, results, repaired_path);
-
-    assert(repair_record.version == 1);  // version 1
-    REQUIRE(repair_record.n_hole_filled == 0); // good repair
-}
-
 TEST_CASE( "test repair hole with more than 1 hole", "[file_repair]" ) {
     MyMesh mesh;
-    auto filepath = meshPath+"2Holes.stl";
+    auto filepath = meshPath+"2HolesWithLargeCube.stl";
 
     loadMesh(mesh, filepath);
 
@@ -416,4 +403,17 @@ TEST_CASE( "test repair hole with more than 1 hole", "[file_repair]" ) {
 
     assert(repair_record.version == 1);  // version 1
     REQUIRE(repair_record.n_hole_filled == 2); // good repair
+}
+
+TEST_CASE( "test not repair large hole", "[file_repair]" ) {
+    MyMesh mesh;
+    auto filepath = meshPath+"largeHole.stl";
+
+    loadMesh(mesh, filepath);
+
+    results = file_check(mesh);
+    repair_record = file_repair_then_check(mesh, results, repaired_path);
+
+    assert(repair_record.version == 1);  // version 1
+    REQUIRE(repair_record.n_hole_filled == 0); // good repair
 }

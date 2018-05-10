@@ -181,15 +181,19 @@ bool callback(int percent, const char *str) {
     return true;
 }
 
-// holesize is compared with < in the hole.h
-int repair_hole(MyMesh & mesh, int holeSize = 5) {
+// holesize is compared with < in the hole.h, since we are limiting the max Volume we can relax the hole size a little
+int repair_hole(MyMesh & mesh, int holeSize = 100) {
     std::cout << "------------------hole repairing before face count " << mesh.FN() << "\n";
-    auto hole_count = vcg::tri::Hole<MyMesh>::EarCuttingFill<vcg::tri::TrivialEar<MyMesh> >(mesh,holeSize,false,callback);
+    // auto hole_count = vcg::tri::Hole<MyMesh>::EarCuttingFill<vcg::tri::SelfIntersectionEar<MyMesh> >(mesh,holeSize,false,callback);
+    // auto hole_count = vcg::tri::Hole<MyMesh>::EarCuttingFill<vcg::tri::SelfIntersectionEar<MyMesh> >(mesh,holeSize,false,callback);
+    vcg::tri::UpdateBounding<MyMesh>::Box(mesh);
+    const float maxDimLimit = 0.01 * max(max(mesh.bbox.DimX(), mesh.bbox.DimY()), mesh.bbox.DimZ());
+    auto hole_count = vcg::tri::Hole<MyMesh>::EarCuttingIntersectionFill<vcg::tri::SelfIntersectionEar<MyMesh>>(mesh,holeSize,maxDimLimit,false,callback);
 
     vcg::tri::UpdateFlags<MyMesh>::FaceBorderFromFF(mesh);
     assert(vcg::tri::Clean<MyMesh>::IsFFAdjacencyConsistent(mesh));
 
-    std::cout << "--------number of holes " << hole_count << "\n";
+    std::cout << "--------number of holes repaired " << hole_count << "\n";
     std::cout << "-------- after number of faces" << mesh.FN() << "\n";
     return hole_count;
 }

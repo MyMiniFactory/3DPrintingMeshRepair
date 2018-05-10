@@ -421,11 +421,13 @@ public:
       p=pHole;
       size=pHoleSize;
       bb=pHoleBB;
+      maxDim=max(max(pHoleBB.DimX(), pHoleBB.DimY()), pHoleBB.DimZ());
     }
     
     PosType p;
     int size;
     Box3Type  bb;
+    float maxDim;
     
     bool operator <  (const  Info & hh) const {return size <  hh.size;}
     
@@ -541,6 +543,7 @@ template<class EAR>
       {
         indCb++;
         if(cb) (*cb)(indCb*10/vinfo.size(),"Closing Holes");
+        std::cout << "size of hole?? " << (*ith).size << std::endl;
         if((*ith).size < sizeHole){
           holeCnt++;
           FillHoleEar< EAR >(m, (*ith).p,facePtrToBeUpdated);
@@ -552,9 +555,10 @@ template<class EAR>
 /// Main Hole Filling function.
 /// Given a mesh search for all the holes smaller than a given size and fill them
 /// It returns the number of filled holes.
-
+/// Tiger comments limit by bounding volume is not a good idea because if the hole is
+/// completely flat then the volume is zero
 template<class EAR>
-    static int EarCuttingIntersectionFill(MESH &m, const int maxSizeHole, bool Selected, CallBackPos *cb=0)
+    static int EarCuttingIntersectionFill(MESH &m, const int maxSizeHole, const float maxHoleBBMin, bool Selected, CallBackPos *cb=0)
     {
       std::vector<Info > vinfo;
       GetInfo(m, Selected,vinfo);
@@ -571,7 +575,8 @@ template<class EAR>
       {
         indCb++;
         if(cb) (*cb)(indCb*10/vinfo.size(),"Closing Holes");
-        if((*ith).size < maxSizeHole){
+        // printf("hole size %i Given Max Dim %f this max dim %f", (*ith).size, maxHoleBBMin, (*ith).maxDim);
+        if((*ith).size < maxSizeHole and (*ith).maxDim < maxHoleBBMin){
           std::vector<FacePointer *> facePtrToBeUpdated;
           holeCnt++;
           facePtrToBeUpdated=vfpOrig;
