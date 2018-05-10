@@ -4,59 +4,48 @@
     <meta charset="utf-8">
 </head>
 
-<script async type="text/javascript" src="filecheck.js"></script>
 <script type="text/javascript">
+    `use strict`;
+    const GLOBAL = {
+        "report":{},
+        "prefix": "r_"
+    }
 
-    GLOBAL = {
-        "check":{},
-        "repair":{}
+    // since chrome does not support subworker, handle them here
+    // leave one cpu for main thread
+    // TODO: don't push new init, push new when necessary
+    // for (let i=0;i<Math.max(1, navigator.hardwareConcurrency-2);i++) {
+    const worker = new Worker('worker.js');
+    worker.onmessage = function(e) {
+        console.log("index html on message");
+        const report = e.data.report;
+        const blob = e.data.blob;
+        const name = e.data.name;
+        if (report !== undefined && blob !== undefined) {
+            GLOBAL.report = {}; // empty useful for uploading one after the other
+            parse_report(report, GLOBAL.report);
+            read_report(GLOBAL.report, name, blob);
+        }
     }
 
     function uploaded() {
         reset();
         var uploadform = document.getElementById("fileuploadform");
-        var filename = uploadform.files[0].name;
-        var fr = new FileReader();
-        fr.readAsArrayBuffer(uploadform.files[0]);
-
-        fr.onload = function (){
-            var stl_name = filename;
-
-            var data = new Uint8Array(fr.result); // base64 to Uint8 for emscripten
-
-            Module['FS_createDataFile'](".", stl_name, data, true, true);
-
-            Module.ccall("js_check_repair", // c function name
-                    undefined, // return
-                    ["string"], // param
-                    [stl_name]
-            );
-
-            // update_from_result(check);
-            GLOBAL.check = {};
-            GLOBAL.repair = {};
-            parse_report("report.txt", GLOBAL.check);
-            parse_report("repair_report.txt", GLOBAL.repair);
-            read_report();
-            console.log(GLOBAL);
-
-            blob_download(stl_name); // TODO: fix this
-            // update_from_result(GLOBAL);
-        } // fr.onload
+        var blob = uploadform.files[0];
+        worker.postMessage({blob});
     }
 
-    function parse_report(report_name, dict) {
-        let res = Module['FS_readFile'](report_name, {encoding:'utf8'});
+    function parse_report(report_str, dict) {
+        let res = report_str;
         res = res.split("\n");
         for (let i=0;i<res.length;i++) {
             let x = res[i];
-            console.log(x);
 
             x = x.split(" ");
 
             if (x.length < 2) continue;
 
-            const key = x[1];
+            let key = x[1];
             let value = x[0];
 
             if (value.includes(".")) { // HACK
@@ -65,41 +54,112 @@
                 value = parseInt(value);
             }
 
+            if (key in dict) key = GLOBAL.prefix + key;
+
             dict[key] = value;
         }
     }
 
-    function read_report() {
+    function read_report(d, name, blob) {
         // clean HTML
         const table_id = "report_table";
-        document.getElementById(table_id).innerHTML = "";
+        // document.getElementById(table_id).innerHTML = "";
+        console.log(d);
 
-            // add to html
-            // if (key.includes("min")
-                    // || key.includes("max")
-                    // || key.includes("area")
-                    // || (key.includes("volume") && !key.includes("is_pos"))
-               // ) {
-        const c = GLOBAL.check;
-        const r = GLOBAL.repair;
+        const is_watertight = d["is_watertight"] ? true : false;
+        const is_coherently_oriented = d["is_coherently_oriented"] ? true : false;
+        const is_positive_volume = d["is_positive_volume"] ? true : false;
+        const is_good_mesh = d["is_good_mesh"] ? true : false;
 
-        for (key in GLOBAL.check) {
-            console.log(key);
-            const row = document.getElementsByTagName("template")[1];
-            const key_HTML = row.content.querySelector(".key");
-            key_HTML.innerHTML = key;
-            const check_HTML = row.content.querySelector(".check");
-            check_HTML.innerHTML = c[key];
-            const repair_HTML = row.content.querySelector(".repair");
-            repair_HTML.innerHTML = r[key];
-            if (r[key] != c[key]) {
-                repair_HTML.innerHTML = "* " + r[key];
-            } else {
-                repair_HTML.innerHTML = r[key];
+        let row = document.getElementsByTagName("template")[1];
+        row = document.importNode(row.content, true);
+
+        let HTML = row.querySelector(".name");
+        HTML.className += " " + is_watertight;
+        HTML.innerHTML = name;
+
+        HTML = row.querySelector(".wt");
+        HTML.className += " " + is_watertight;
+        HTML.innerHTML = is_watertight;
+
+        HTML = row.querySelector(".cn");
+        HTML.className += " " + is_coherently_oriented;
+        HTML.innerHTML = is_coherently_oriented;
+
+        HTML = row.querySelector(".pv");
+        HTML.className += " " + is_positive_volume;
+        HTML.innerHTML = is_positive_volume;
+
+        const r_is_watertight = d[GLOBAL.prefix + "is_watertight"] ? true : false;
+        const r_is_coherently_oriented = d[GLOBAL.prefix + "is_coherently_oriented"] ? true : false;
+        const r_is_positive_volume = d[GLOBAL.prefix + "is_positive_volume"] ? true : false;
+
+        const n_dup_f = d["num_duplicated_faces_removed"];
+        const n_degen_f = d["num_degenerated_faces_removed"];
+
+        if (d["is_good_repair"]) { // this condition is wrong
+
+            HTML = row.querySelector(".name");
+            HTML.className += " warning";
+            HTML.innerHTML = "*(repair) " + name;
+
+            HTML = row.querySelector(".wt");
+            HTML.className += " " + r_is_watertight;
+            HTML.innerHTML = r_is_watertight;
+
+            HTML = row.querySelector(".cn");
+            HTML.className += " " + r_is_coherently_oriented;
+            HTML.innerHTML = r_is_coherently_oriented;
+
+            HTML = row.querySelector(".pv");
+            HTML.className += " " + r_is_positive_volume;
+            HTML.innerHTML = r_is_positive_volume;
+
+            HTML = row.querySelector(".ri");
+            HTML.className += " ri_good_repair";
+            HTML.innerHTML = "Repair successful, Hover to see more or " + HTML.innerHTML;
+
+            HTML = row.querySelector(".ri_div");
+            // HACK
+            if (n_dup_f > 0)
+                HTML.innerHTML += "<p>removed " + n_dup_f + " duplicate faces</p>";
+            if (n_degen_f > 0)
+                HTML.innerHTML += "<p>removed " + n_degen_f + " degen faces</p>";
+
+            for (k in d) {
+                const r_k = GLOBAL.prefix + k;
+                if (k.startsWith(GLOBAL.prefix)) continue;
+
+                if (d[k] !== d[r_k] && d[r_k] !== undefined) {
+                    HTML.innerHTML += "<p>repair " + k + " from " + d[k] + " to " + d[r_k] + "</p>";
+                }
             }
-            const to_add = document.importNode(row.content, true);
-            document.getElementById(table_id).appendChild(to_add);
+
+            HTML = row.querySelector(".action");
+
+            const url = window.URL.createObjectURL(blob);
+            console.log(url);
+            var a = document.createElement("a");
+            a.style = "display: none";
+            a.href = url;
+            a.download = "test.ply";
+            a.id = Math.random();
+            HTML.appendChild(a);
+
+            HTML.innerHTML += `<button onclick="document.getElementById(${a.id}).click()">Download Repaired Version</a>`;
+
+        } else if (d["is_good_mesh"]){
+            HTML = row.querySelector(".ri");
+            HTML.innerHTML = "Perfect Mesh";
+        } else {
+            HTML = row.querySelector(".ri");
+            HTML.innerHTML = "tried to repair, but unsuccessful";
+            HTML = row.querySelector(".action");
+            HTML.innerHTML += "<button>Upload Your Repair Version</button>";
         }
+
+        document.getElementById(table_id).appendChild(row);
+
     }
 
     function blob_download(stl_name) {
@@ -289,7 +349,6 @@
     }
 
     function reset() {
-        console.log("reset2");
         const to_empty = document.getElementById("content");
         while (to_empty.firstChild) {
             to_empty.removeChild(to_empty.firstChild);
@@ -416,6 +475,35 @@
     width: 100%;
 }
 
+#report_table th{
+    border: 1px solid black;
+}
+
+.false {
+    color: red;
+}
+
+.true {
+    color: green;
+}
+
+.warning {
+    color: #bdbd07;
+}
+
+.ri_div {
+    display: None;
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    border: 3px solid #73AD21;
+}
+
+.ri_good_repair:hover div {
+    display: block;
+}
+
 </style>
 </head>
 <input type="file" onChange="uploaded()" id="fileuploadform"/>
@@ -444,16 +532,28 @@
 
     <template>
         <tr>
-            <td class="key"></td>
-            <td class="check"></td>
-            <td class="repair"></td>
+            <td class="name"></td>
+            <td class="wt"></td>
+            <td class="cn"></td>
+            <td class="pv"></td>
+            <td class="ri"><div class="ri_div"></div></td>
+            <td class="action"></td>
         </tr>
     </template>
 
     <div id="content"></div>
     <a id="download"><button disabled>Click to download repaired file</button></a>
     <div id="report">
-        <table id="report_table"></table>
+        <table id="report_table">
+            <tr>
+                <th>Name</th>
+                <th>Watertight</th>
+                <th>Consistent Normal</th>
+                <th>Positive Volume</th>
+                <th>Info</th>
+                <th>Action</th>
+            </tr>
+        </table>
     </div>
 
     <div>

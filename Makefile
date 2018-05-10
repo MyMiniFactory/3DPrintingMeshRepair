@@ -14,14 +14,14 @@ EM_UNITTEST_OUT_HTML := ./unittest/unittest_out/filecheck.html
 
 EM_EXTRA_FLAGS := -s DEMANGLE_SUPPORT=1
 
-EM_CXXFLAGS := -s EXPORTED_FUNCTIONS='["_js_check_repair"]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap", "FS_createDataFile", "FS_readFile"]' -s ALLOW_MEMORY_GROWTH=1
+EM_CXXFLAGS := -s EXPORTED_FUNCTIONS='["_js_check_repair"]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap", "FS_createDataFile", "FS_readFile", "FS_unlink"]' -s ALLOW_MEMORY_GROWTH=1
 
 UNITTESTCXXFLAGS := -I ./unittest/catch \
 					-D FILECHECK_TEST
 
 EM_UNITTESTCXXFLAGS := -s DEMANGLE_SUPPORT=1 --embed-file ./unittest/meshes/@./unittest/meshes/
 
-FILECHECK_CPP := fileCheck.cpp
+FILECHECK_CPP := fileCheck.cpp vcglib/wrap/ply/plylib.cpp
 UNITTEST_CPP := unittest/fileCheckUnittest.cpp
 
 EMCC := em++
@@ -36,16 +36,11 @@ build:
 
 test:
 	${CC} ${FILECHECK_CPP} ${UNITTEST_CPP} ${CXXFLAGS} ${UNITTESTCXXFLAGS} -o ${UNITTEST_OUT_EXE}
-	@echo run it like ${UNITTEST_OUT_EXE}
-
-em:
-	@echo BUILD=${BUILD}
-	@echo CXXFLAGS=${CXXFLAGS}
-	${EMCC} ${FILECHECK_CPP} ${CXXFLAGS} ${EM_CXXFLAGS} ${EM_EXTRA_FLAGS} -o ${EM_OUT_JS}
-
-emtest:
-	${EMCC} ${FILECHECK_CPP} ${UNITTEST_CPP} ${CXXFLAGS} ${UNITTESTCXXFLAGS} ${EM_UNITTESTCXXFLAGS} ${EM_EXTRA_FLAGS} -o ${EM_UNITTEST_OUT_HTML}
-	@echo run it like google-chrome ${EM_UNITTEST_OUT_HTML} or nodejs ./unittest/unittest_out/filecheck.js
+	@echo test it like ${UNITTEST_OUT_EXE}
 
 wasm:
 	${EMCC} ${FILECHECK_CPP} ${CXXFLAGS} ${EM_CXXFLAGS} ${EM_EXTRA_FLAGS} -o ${EM_OUT_JS} ${WASM}
+
+wasm_test:
+	${EMCC} ${FILECHECK_CPP} ${UNITTEST_CPP} ${CXXFLAGS} ${UNITTESTCXXFLAGS} ${EM_UNITTESTCXXFLAGS} ${EM_EXTRA_FLAGS} -o ${EM_UNITTEST_OUT_HTML} ${WASM}
+
