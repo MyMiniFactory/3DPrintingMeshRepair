@@ -244,6 +244,18 @@ bool loadMesh(MyMesh & mesh, const std::string filepath) {
     return true;
 }
 
+bool exportMesh(MyMesh & mesh, const std::string exportPath) {
+    const auto extension = util::extension_lower(exportPath);
+
+    if (extension == "ply")
+        vcg::tri::io::ExporterPLY<MyMesh>::Save(mesh, exportPath.c_str());
+    else if (extension == "stl")
+        vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, exportPath.c_str());
+    else
+        throw("Not Supported Export Type");
+
+}
+
 checkResult_t file_check(MyMesh & m) {
     auto t1 = std::chrono::high_resolution_clock::now();
     checkResult_t r;
@@ -330,7 +342,7 @@ repairRecord_t file_repair(
         r.n_non_manif_f_removed = Clean_t::RemoveNonManifoldFace(mesh);
 
         // reload mesh
-        vcg::tri::io::ExporterPLY<MyMesh>::Save(mesh, repaired_path.c_str());
+        exportMesh(mesh, repaired_path); // ply
         MyMesh repaired_mesh;
         loadMesh(mesh, repaired_path);
         vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
@@ -348,7 +360,8 @@ repairRecord_t file_repair(
             Clean_t::RemoveDuplicateVertex(mesh, true);
 
             // reload mesh
-            vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, repaired_path.c_str());
+            exportMesh(mesh, repaired_path); // ply
+
             MyMesh repaired_mesh;
             loadMesh(mesh, repaired_path);
             vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
@@ -398,8 +411,9 @@ repairRecord_t file_repair_then_check(
     auto repair_record = file_repair(mesh, results, repaired_path);
     assert(repair_record.version == 1);
 
+     // final file type should be user input
     if (not repaired_path.empty())
-        vcg::tri::io::ExporterPLY<MyMesh>::Save(mesh, repaired_path.c_str());
+        exportMesh(mesh, repaired_path);
 
     MyMesh repaired_mesh;
     loadMesh(repaired_mesh, repaired_path);

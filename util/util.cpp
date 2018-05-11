@@ -1,4 +1,3 @@
-#include <algorithm>
 #include "util.hpp"
 
 #ifdef FILECHECK_TEST
@@ -11,6 +10,11 @@ const std::string extension_lower(std::string filepath) {
     std::string extension(filepath.substr(filepath.find_last_of('.') + 1));
     std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
     return extension;
+}
+
+bool exists(std::string filepath) {
+    std::ifstream f(filepath.c_str());
+    return f.good();
 }
 
 #ifdef FILECHECK_TEST

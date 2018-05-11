@@ -417,3 +417,16 @@ TEST_CASE( "test not repair large hole", "[file_repair]" ) {
     assert(repair_record.version == 1);  // version 1
     REQUIRE(repair_record.n_hole_filled == 0); // good repair
 }
+
+TEST_CASE( "test exporter", "[util]" ) {
+    MyMesh mesh;
+    bool is_successful = loadMesh(mesh, meshPath+"perfect.stl");
+    const auto export_stl_path = meshPath+"repaired.stl";
+    const auto export_ply_path = meshPath+"repaired.ply";
+
+    exportMesh(mesh, export_stl_path);
+    REQUIRE(util::exists(export_stl_path) == true); // good repair
+
+    exportMesh(mesh, export_ply_path);
+    REQUIRE(util::exists(export_ply_path) == true); // good repair
+}

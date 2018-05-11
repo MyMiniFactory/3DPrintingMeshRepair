@@ -57,6 +57,7 @@ typedef vcg::tri::Clean<MyMesh> Clean_t;
 
 
 bool loadMesh(MyMesh & mesh, const std::string filepath);
+bool exportMesh(MyMesh & mesh, const std::string exportPath);
 
 float Volume(MyMesh & mesh);
 float Area(MyMesh & mesh);
