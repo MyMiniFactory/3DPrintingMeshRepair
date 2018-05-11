@@ -6,7 +6,6 @@
 std::string meshPath = "./unittest/meshes/";
 checkResult_t results, repair_results;
 repairRecord_t repair_record;
-const auto repaired_path = meshPath+"repaired.ply";
 
 TEST_CASE( "test successful loadMesh", "[file_check]" ) {
     MyMesh mesh;
