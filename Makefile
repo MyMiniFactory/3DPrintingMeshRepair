@@ -5,7 +5,7 @@ cxxflags.release := -O3
 
 CC := g++
 OUT_EXE := ./out/filecheck
-CXXFLAGS += -std=c++11 -I ./vcglib/ -I ./vcglib/eigenlib/ -I . ${cxxflags.${BUILD}}
+CXXFLAGS += -std=c++11 -I ./vcglib/ -I ./vcglib/eigenlib/ -I . ${cxxflags.${BUILD}} -I ./util/
 
 EM_OUT_JS := filecheck.js
 

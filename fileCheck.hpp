@@ -28,6 +28,8 @@
 #include <stdlib.h>
 #include <chrono>
 
+#include "util.hpp"
+
 class MyVertex; class MyFace; class MyEdge;
 struct MyUsedTypes : public vcg::UsedTypes<vcg::Use<MyVertex>   ::AsVertexType,
                             vcg::Use<MyFace>     ::AsFaceType,

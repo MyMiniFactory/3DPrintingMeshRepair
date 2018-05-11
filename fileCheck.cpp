@@ -1,4 +1,4 @@
-#include <fileCheck.hpp>
+#include "fileCheck.hpp"
 
 void Boundary(MyMesh & mesh, checkResult_t& r) {
     vcg::tri::UpdateBounding<MyMesh>::Box(mesh);
@@ -198,17 +198,12 @@ int repair_hole(MyMesh & mesh, int holeSize = 100) {
     return hole_count;
 }
 
-const std::string extension_lower(std::string filepath) {
-    std::string extension(filepath.substr(filepath.find_last_of('.') + 1));
-    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-    return extension;
-}
-
 bool loadMesh(MyMesh & mesh, const std::string filepath) {
     auto t1 = std::chrono::high_resolution_clock::now();
     int a = 2; // TODO: understand what this is
 
-    std::string extension = extension_lower(filepath);
+    std::string extension = util::extension_lower(filepath);
+    // std::string extension = "ply";
 
     if (extension == "stl") {
         if(vcg::tri::io::ImporterSTL<MyMesh>::Open(mesh, filepath.c_str(),  a))
@@ -476,7 +471,7 @@ int main( int argc, char *argv[] )
     std::string repaired_path = "./out/repaired_perfect.ply";
     if (argc >= 3) {
         repaired_path = argv[2];
-        assert(extension_lower(repaired_path)  == "ply");
+        // assert(extension_lower(repaired_path)  == "ply");
     } else {
         printf("repaired path is given writing to %s\n", repaired_path.c_str());
     }
