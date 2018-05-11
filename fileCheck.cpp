@@ -256,15 +256,6 @@ bool exportMesh(MyMesh & mesh, const std::string exportPath) {
 
 }
 
-bool reloadMesh(MyMesh& mesh) {
-    const auto random_ply = std::to_string(std::rand()) + ".ply";
-    exportMesh(mesh, random_ply); // ply
-    loadMesh(mesh, random_ply);
-    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
-
-    std::remove(random_ply.c_str());
-}
-
 checkResult_t file_check(MyMesh & m) {
     auto t1 = std::chrono::high_resolution_clock::now();
     checkResult_t r;
@@ -351,11 +342,10 @@ repairRecord_t file_repair(
         r.n_non_manif_f_removed = Clean_t::RemoveNonManifoldFace(mesh);
 
         // reload mesh
-        reloadMesh(mesh);
-        // exportMesh(mesh, repaired_path); // ply
-        // MyMesh repaired_mesh;
-        // loadMesh(mesh, repaired_path);
-        // vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
+        exportMesh(mesh, repaired_path); // ply
+        MyMesh repaired_mesh;
+        loadMesh(mesh, repaired_path);
+        vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
 
         isWaterTight = IsWaterTight(mesh);
         isCoherentlyOriented = IsCoherentlyOrientedMesh(mesh);
@@ -370,11 +360,11 @@ repairRecord_t file_repair(
             Clean_t::RemoveDuplicateVertex(mesh, true);
 
             // reload mesh
-            reloadMesh(mesh);
-            // exportMesh(mesh, repaired_path); // ply
-            // MyMesh repaired_mesh;
-            // loadMesh(mesh, repaired_path);
-            // vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
+            exportMesh(mesh, repaired_path); // ply
+
+            MyMesh repaired_mesh;
+            loadMesh(mesh, repaired_path);
+            vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
 
             isWaterTight = IsWaterTight(mesh);
             isCoherentlyOriented = IsCoherentlyOrientedMesh(mesh);
@@ -421,10 +411,14 @@ repairRecord_t file_repair_then_check(
     auto repair_record = file_repair(mesh, results, repaired_path);
     assert(repair_record.version == 1);
 
-    reloadMesh(mesh); // mesh becomes the repaired mesh
-    exportMesh(mesh, repaired_path);
+     // final file type should be user input
+    if (not repaired_path.empty())
+        exportMesh(mesh, repaired_path);
 
-    auto repair_results = file_check(mesh); // TODO: repair boundary
+    MyMesh repaired_mesh;
+    loadMesh(repaired_mesh, repaired_path);
+
+    auto repair_results = file_check(repaired_mesh); // TODO: repair boundary
 
     repair_record.is_good_repair = IsGoodRepair(results, repair_results);
 
@@ -488,12 +482,12 @@ int main( int argc, char *argv[] )
         filepath = argv[1];
     }
 
-    std::string repaired_path = "./out/repaired_perfect.stl";
+    std::string repaired_path = "./out/repaired_perfect.ply";
     if (argc >= 3) {
         repaired_path = argv[2];
         // assert(extension_lower(repaired_path)  == "ply");
     } else {
-        printf("repaired path is not given writing to %s\n", repaired_path.c_str());
+        printf("repaired path is given writing to %s\n", repaired_path.c_str());
     }
 
     if (filepath == repaired_path) {
