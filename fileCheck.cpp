@@ -252,7 +252,7 @@ bool exportMesh(MyMesh & mesh, const std::string exportPath) {
     else if (extension == "stl")
         vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, exportPath.c_str());
     else
-        throw("Not Supported Export Type");
+        throw std::runtime_error("Not Supported Export Type " + extension);
 
 }
 

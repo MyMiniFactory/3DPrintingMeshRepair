@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <chrono>
+#include <stdexcept>
 
 #include "util.hpp"
 
