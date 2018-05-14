@@ -30,6 +30,8 @@
 #include <stdexcept>
 
 #include "util.hpp"
+#include "json.hpp"
+using json_t=nlohmann::json;
 
 class MyVertex; class MyFace; class MyEdge;
 struct MyUsedTypes : public vcg::UsedTypes<vcg::Use<MyVertex>   ::AsVertexType,
@@ -97,34 +99,58 @@ class checkResult_t {
     float zmin; float zmax;
     float area; float volume;
 
-    void output_report(FILE* report) const {
-        printf("---------------writing report\n");
+    std::string prefix;
 
+    void output_report(json_t& json) {
         assert(version == 4);
-
-        std::fprintf(report, "%d num_version\n",                    version);
-        std::fprintf(report, "%d num_face\n",                       n_faces);
-        std::fprintf(report, "%d num_vertices\n",                   n_vertices);
-        std::fprintf(report, "%d num_degenerated_faces_removed\n",  n_degen_faces);
-        std::fprintf(report, "%d num_duplicated_faces_removed\n",   n_duplicate_faces);
-        std::fprintf(report, "%d is_watertight\n",                  is_watertight);
-        std::fprintf(report, "%d is_coherently_oriented\n",         is_coherently_oriented);
-        std::fprintf(report, "%d is_positive_volume\n",             is_positive_volume);
-        std::fprintf(report, "%d num_intersecting_faces\n",         n_intersecting_faces);
-        std::fprintf(report, "%d num_shells\n",                     n_shells);
-        std::fprintf(report, "%d num_non_manifold_edges\n",         n_non_manifold_edges);
-        std::fprintf(report, "%d num_holes\n",                      n_holes);
-        std::fprintf(report, "%d is_good_mesh\n",                   is_good_mesh);
-        std::fprintf(report, "%f min_x\n",                          xmin);
-        std::fprintf(report, "%f max_x\n",                          xmax);
-        std::fprintf(report, "%f min_y\n",                          ymin);
-        std::fprintf(report, "%f max_y\n",                          ymax);
-        std::fprintf(report, "%f min_z\n",                          zmin);
-        std::fprintf(report, "%f max_z\n",                          zmax);
-        std::fprintf(report, "%f area\n",                           area);
-        std::fprintf(report, "%f volume\n",                         volume);
+        // const auto prefix = this->getPrefix();
+        json[prefix + "num_version"]=                    version;
+        json[prefix + "num_face"]=                       n_faces;
+        json[prefix + "num_vertices"]=                   n_vertices;
+        json[prefix + "num_degenerated_faces_removed"]=  n_degen_faces;
+        json[prefix + "num_duplicated_faces_removed"]=   n_duplicate_faces;
+        json[prefix + "is_watertight"]=                  is_watertight;
+        json[prefix + "is_coherently_oriented"]=         is_coherently_oriented;
+        json[prefix + "is_positive_volume"]=             is_positive_volume;
+        json[prefix + "num_intersecting_faces"]=         n_intersecting_faces;
+        json[prefix + "num_shells"]=                     n_shells;
+        json[prefix + "num_non_manifold_edges"]=         n_non_manifold_edges;
+        json[prefix + "num_holes"]=                      n_holes;
+        json[prefix + "is_good_mesh"]=                   is_good_mesh;
+        json[prefix + "min_x"]=                          xmin;
+        json[prefix + "max_x"]=                          xmax;
+        json[prefix + "min_y"]=                          ymin;
+        json[prefix + "max_y"]=                          ymax;
+        json[prefix + "min_z"]=                          zmin;
+        json[prefix + "max_z"]=                          zmax;
+        json[prefix + "area"]=                           area;
+        json[prefix + "volume"]=                         volume;
     }
 
+};
+
+class repairResult_t: public checkResult_t {
+    public:
+        bool does_fix_coherently_oriented; // 1 fix CoherentlyOriented
+        bool does_fix_positive_volume; // 2 fix not Positive Volume
+        unsigned int n_non_manif_f_removed = 0; // 4 remove non manifold faces
+        unsigned int n_hole_filled = 0; // 5 fix hole
+        bool is_good_repair = false; // 6 is good repair
+
+        repairResult_t(checkResult_t &&r) {
+            prefix = "r_";
+        }
+
+    void output_report(json_t& json) {
+        checkResult_t::output_report(json);
+
+        json[prefix + "repair_version"]=            version;
+        json[prefix + "does_make_coherent_orient"]= does_fix_coherently_oriented;
+        json[prefix + "does_flip_normal_outside"]=  does_fix_positive_volume;
+        json[prefix + "does_rm_non_manif_faces"]=   n_non_manif_f_removed;
+        json[prefix + "does_hole_fix"]=             n_hole_filled;
+        json[prefix + "is_good_repair"]=            is_good_repair;
+    }
 };
 
 void Boundary(MyMesh & mesh, checkResult_t& boundary);
@@ -139,15 +165,27 @@ class repairRecord_t {
     unsigned int n_non_manif_f_removed = 0; // 4 remove non manifold faces
     unsigned int n_hole_filled = 0; // 5 fix hole
     bool is_good_repair = false; // 6 is good repair
+    std::string prefix = "r_";
 
+    /*
     void output_report(FILE* report) const {
-        assert(version == 1);
         std::fprintf(report, "%d repair_version\n",            version);
         std::fprintf(report, "%d does_make_coherent_orient\n", does_fix_coherently_oriented);
         std::fprintf(report, "%d does_flip_normal_outside\n",  does_fix_positive_volume);
         std::fprintf(report, "%d does_rm_non_manif_faces\n",   n_non_manif_f_removed);
         std::fprintf(report, "%d does_hole_fix\n",             n_hole_filled);
         std::fprintf(report, "%d is_good_repair\n",            is_good_repair);
+    }
+    */
+
+    void output_report(json_t& json) {
+        assert(version == 1);
+        json[prefix + "repair_version"]=            version;
+        json[prefix + "does_make_coherent_orient"]= does_fix_coherently_oriented;
+        json[prefix + "does_flip_normal_outside"]=  does_fix_positive_volume;
+        json[prefix + "does_rm_non_manif_faces"]=   n_non_manif_f_removed;
+        json[prefix + "does_hole_fix"]=             n_hole_filled;
+        json[prefix + "is_good_repair"]=            is_good_repair;
     }
 };
 
@@ -173,6 +211,6 @@ repairRecord_t file_repair(
 
 repairRecord_t file_repair_then_check(
     MyMesh & mesh, const checkResult_t check_r, const std::string repaired_path,
-    FILE* report = stdout
+    json_t& json
 );
 #endif

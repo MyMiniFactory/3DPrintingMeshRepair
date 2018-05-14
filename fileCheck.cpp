@@ -312,6 +312,10 @@ checkResult_t file_check(MyMesh & m) {
     return r;
 }
 
+// repairResult_t repair_check(MyMesh& m) {
+    // return (repairResult_t) file_check(m);
+// }
+
 bool DoesFlipNormalOutside(MyMesh & mesh, bool isWaterTight, bool isCoherentlyOriented, bool isPositiveVolume) {
     if (isWaterTight && isCoherentlyOriented && not isPositiveVolume) {
         Clean_t::FlipMesh(mesh);
@@ -416,7 +420,7 @@ bool IsGoodRepair(checkResult_t results, checkResult_t repair_results) {
 
 repairRecord_t file_repair_then_check(
         MyMesh & mesh, checkResult_t results, const std::string repaired_path,
-        FILE* report
+        json_t& json
     ) {
     auto repair_record = file_repair(mesh, results, repaired_path);
     assert(repair_record.version == 1);
@@ -424,12 +428,13 @@ repairRecord_t file_repair_then_check(
     reloadMesh(mesh); // mesh becomes the repaired mesh
     exportMesh(mesh, repaired_path);
 
-    auto repair_results = file_check(mesh); // TODO: repair boundary
+    repairResult_t repair_results(file_check(mesh)); // TODO: repair boundary
 
     repair_record.is_good_repair = IsGoodRepair(results, repair_results);
 
-    repair_record.output_report(report);
-    repair_results.output_report(report);
+    // repair_record.output_report(json);
+    // repair_results.repairResult_t::output_report(json);
+    repair_results.output_report(json);
 
     return repair_record;
 }
@@ -460,13 +465,18 @@ int check_repair_main(
     }
     auto results = file_check(mesh);
 
-    FILE* report = report_path.empty() ? stdout : std::fopen(report_path.c_str(), "w");
-    results.output_report(report);
+    // FILE* report = report_path.empty() ? stdout : std::fopen(report_path.c_str(), "w");
+    nlohmann::json json;
+    results.output_report(json);
 
     if (not results.is_good_mesh) {
-        file_repair_then_check(mesh, results, repaired_path, report);
+        file_repair_then_check(mesh, results, repaired_path, json);
     }
-    if (report != stdout) std::fclose(report);
+
+    std::ofstream file(report_path);
+    file << json;
+    file.close();
+    // if (report != stdout) std::fclose(report);
     return 0;
 }
 
