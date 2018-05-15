@@ -6,7 +6,8 @@
 std::string meshPath = "./unittest/meshes/";
 checkResult_t results, repair_results;
 repairRecord_t repair_record;
-const auto repaired_path = meshPath+"repaired.ply";
+const auto repaired_path = meshPath+"repaired.stl";
+const auto report_path = meshPath+"out.json";
 
 TEST_CASE( "test successful loadMesh", "[file_check]" ) {
     MyMesh mesh;
@@ -429,4 +430,77 @@ TEST_CASE( "test exporter", "[util]" ) {
 
     exportMesh(mesh, export_ply_path);
     REQUIRE(util::exists(export_ply_path) == true); // good repair
+}
+
+TEST_CASE( "test final export json", "[overall]" ) {
+
+    auto filepath = meshPath+"2HolesWithLargeCube.stl";
+    check_repair_main(filepath, repaired_path, report_path);
+
+    ifstream f(report_path);
+    REQUIRE(f.good() == true); // check exists
+    f.close();
+
+    json_t json;
+    std::ifstream i(report_path);
+    i >> json;
+    i.close();
+
+    std::remove(report_path.c_str());
+
+    const std::vector<std::string> keys= {
+        "num_version",
+        "num_face",
+        "num_vertices",
+        "num_degenerated_faces_removed",
+        "num_duplicated_faces_removed",
+        "is_watertight",
+        "is_coherently_oriented",
+        "is_positive_volume",
+        "num_intersecting_faces",
+        "num_shells",
+        "num_non_manifold_edges",
+        "num_holes",
+        "is_good_mesh",
+        "min_x",
+        "max_x",
+        "min_y",
+        "max_y",
+        "min_z",
+        "max_z",
+        "area",
+        "volume",
+        "repair_version",
+        "does_make_coherent_orient",
+        "does_flip_normal_outside",
+        "num_rm_non_manif_faces",
+        "num_hole_fix",
+        "is_good_repair",
+        "r_num_version",
+        "r_num_face",
+        "r_num_vertices",
+        "r_num_degenerated_faces_removed",
+        "r_num_duplicated_faces_removed",
+        "r_is_watertight",
+        "r_is_coherently_oriented",
+        "r_is_positive_volume",
+        "r_num_intersecting_faces",
+        "r_num_shells",
+        "r_num_non_manifold_edges",
+        "r_num_holes",
+        "r_is_good_mesh",
+        "r_min_x",
+        "r_max_x",
+        "r_min_y",
+        "r_max_y",
+        "r_min_z",
+        "r_max_z",
+        "r_area",
+        "r_volume",
+    };
+
+    for (auto key : keys) {
+        REQUIRE(json.count(key) == 1);
+    }
+
 }
