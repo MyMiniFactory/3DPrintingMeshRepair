@@ -142,17 +142,15 @@ class repairRecord_t {
     unsigned int n_non_manif_f_removed = 0; // 4 remove non manifold faces
     unsigned int n_hole_filled = 0; // 5 fix hole
     bool is_good_repair = false; // 6 is good repair
-    std::string prefix = "";
 
     void output_report(json_t& json) {
         assert(r_version == 1);
-        assert(prefix == "");
-        json[prefix + "repair_version"]=            r_version;
-        json[prefix + "does_make_coherent_orient"]= does_fix_coherently_oriented;
-        json[prefix + "does_flip_normal_outside"]=  does_fix_positive_volume;
-        json[prefix + "num_rm_non_manif_faces"]=   n_non_manif_f_removed;
-        json[prefix + "num_hole_fix"]=             n_hole_filled;
-        json[prefix + "is_good_repair"]=            is_good_repair;
+        json["repair_version"]           = r_version;
+        json["does_make_coherent_orient"]= does_fix_coherently_oriented;
+        json["does_flip_normal_outside"] = does_fix_positive_volume;
+        json["num_rm_non_manif_faces"]   = n_non_manif_f_removed;
+        json["num_hole_fix"]             = n_hole_filled;
+        json["is_good_repair"]           = is_good_repair;
     }
 };
 
@@ -219,4 +217,11 @@ repairRecord_t file_repair(
 repairResult_t file_repair_then_check(
     MyMesh & mesh, const checkResult_t check_r, const std::string repaired_path
 );
+
+int check_repair_main(
+    const std::string filepath,
+    const std::string repaired_path,
+    const std::string report_path
+);
+
 #endif
