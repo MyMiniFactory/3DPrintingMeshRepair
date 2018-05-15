@@ -343,8 +343,6 @@ repairRecord_t file_repair(
     auto t1 = std::chrono::high_resolution_clock::now();
     repairRecord_t r;
 
-    r.version = 1; // version 1 of file repair
-
     assert(check_r.version == 4); // version number needs to be 1
 
     bool isWaterTight = check_r.is_watertight;
@@ -404,10 +402,14 @@ repairRecord_t file_repair(
     std::cout << "file_repair() took "
         << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
         << " milliseconds\n";
+
+    reloadMesh(mesh); // mesh becomes the repaired mesh
+    exportMesh(mesh, repaired_path);
+
     return r;
 }
 
-bool IsGoodRepair(checkResult_t results, checkResult_t repair_results) {
+bool IsGoodRepair(checkResult_t results, repairResult_t repair_results) {
     assert(results.version == 4); // correct version
     if (not repair_results.is_good_mesh) // if it is not good mesh
         return false;
@@ -418,25 +420,18 @@ bool IsGoodRepair(checkResult_t results, checkResult_t repair_results) {
     return true;
 }
 
-repairRecord_t file_repair_then_check(
-        MyMesh & mesh, checkResult_t results, const std::string repaired_path,
-        json_t& json
+repairResult_t file_repair_then_check(
+        MyMesh & mesh, checkResult_t results, const std::string repaired_path
     ) {
     auto repair_record = file_repair(mesh, results, repaired_path);
-    assert(repair_record.version == 1);
 
-    reloadMesh(mesh); // mesh becomes the repaired mesh
-    exportMesh(mesh, repaired_path);
+    assert(repair_record.r_version == 1);
 
-    repairResult_t repair_results(file_check(mesh)); // TODO: repair boundary
+    repairResult_t repair_results(file_check(mesh), repair_record);
 
-    repair_record.is_good_repair = IsGoodRepair(results, repair_results);
+    repair_results.is_good_repair = IsGoodRepair(results, repair_results);
 
-    // repair_record.output_report(json);
-    // repair_results.repairResult_t::output_report(json);
-    repair_results.output_report(json);
-
-    return repair_record;
+    return repair_results;
 }
 
 void file_check(const std::string filepath) {
@@ -465,18 +460,17 @@ int check_repair_main(
     }
     auto results = file_check(mesh);
 
-    // FILE* report = report_path.empty() ? stdout : std::fopen(report_path.c_str(), "w");
-    nlohmann::json json;
+    json_t json;
     results.output_report(json);
 
     if (not results.is_good_mesh) {
-        file_repair_then_check(mesh, results, repaired_path, json);
+        repairResult_t repair_results = file_repair_then_check(mesh, results, repaired_path);
+        repair_results.output_report(json);
     }
 
     std::ofstream file(report_path);
     file << json;
     file.close();
-    // if (report != stdout) std::fclose(report);
     return 0;
 }
 

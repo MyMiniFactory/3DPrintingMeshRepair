@@ -211,7 +211,7 @@ TEST_CASE( "test no file repair", "[file_repair]" ) {
     // file_repair(mesh, results, repair_record, repaired_path);
     repair_record = file_repair_then_check(mesh, results, repaired_path);
 
-    assert(repair_record.version == 1);  // version 1
+    assert(repair_record.r_version == 1);  // version 1
     REQUIRE(repair_record.does_fix_coherently_oriented == 0); // no fix coherently oriented
     REQUIRE(repair_record.does_fix_positive_volume == 0); // no fix negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 0); // no fix for remove non manifold
@@ -228,7 +228,7 @@ TEST_CASE( "test fix volume and coherent oriented", "[file_repair]" ) {
     // file_repair(mesh, results, repair_record, repaired_path);
     repair_record = file_repair_then_check(mesh, results, repaired_path);
 
-    assert(repair_record.version == 1);  // version 1
+    assert(repair_record.r_version == 1);  // version 1
     REQUIRE(repair_record.does_fix_coherently_oriented == true); // fix for coherently oriented
     REQUIRE(repair_record.does_fix_positive_volume == true); // fix for negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 0); // no fix for remove non manifold
@@ -246,7 +246,7 @@ TEST_CASE( "test only fix positive volume", "[file_repair]" ) {
     // file_repair(mesh, results, repair_record, repaired_path);
     repair_record = file_repair_then_check(mesh, results, repaired_path);
 
-    assert(repair_record.version == 1);  // version 1
+    assert(repair_record.r_version == 1);  // version 1
     REQUIRE(repair_record.does_fix_coherently_oriented == 0); // no fix for coherently oriented
     REQUIRE(repair_record.does_fix_positive_volume == 1); // fix for negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 0); // no fix for remove non manifold
@@ -264,7 +264,7 @@ TEST_CASE( "test only fix coherently oriented", "[file_repair]" ) {
     // file_repair(mesh, results, repair_record, repaired_path);
     repair_record = file_repair_then_check(mesh, results, repaired_path);
 
-    assert(repair_record.version == 1);  // version 1
+    assert(repair_record.r_version == 1);  // version 1
     REQUIRE(repair_record.does_fix_coherently_oriented == 1); // fix for coherenltly oriented
     REQUIRE(repair_record.does_fix_positive_volume == 0); // fix for negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 0); // no fix for remove non manifold
@@ -303,7 +303,7 @@ TEST_CASE( "test repair for hole", "[file_repair]" ) {
     // file_repair(mesh, results, repair_record, repaired_path);
     repair_record = file_repair_then_check(mesh, results, repaired_path);
 
-    assert(repair_record.version == 1);  // version 1
+    assert(repair_record.r_version == 1);  // version 1
     REQUIRE(repair_record.does_fix_coherently_oriented == 0); // no fix for coherently oriented
     REQUIRE(repair_record.does_fix_positive_volume == 0); // fix for negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 0); // no fix for remove non manifold
@@ -331,7 +331,7 @@ TEST_CASE( "test repair for non manifold", "[file_repair]" ) {
     // file_repair(mesh, results, repair_record, repaired_path);
     repair_record = file_repair_then_check(mesh, results, repaired_path);
 
-    assert(repair_record.version == 1);  // version 1
+    assert(repair_record.r_version == 1);  // version 1
     REQUIRE(repair_record.does_fix_coherently_oriented == 0); // no fix for coherently oriented
     REQUIRE(repair_record.does_fix_positive_volume == 0); // fix for negative volume
     REQUIRE(repair_record.n_non_manif_f_removed == 3); // remove 3 non manifold faces
@@ -359,7 +359,7 @@ TEST_CASE( "test successful repair", "[file_repair]" ) {
     // file_repair(mesh, results, repair_record, repaired_path);
     repair_record = file_repair_then_check(mesh, results, repaired_path);
 
-    assert(repair_record.version == 1);  // version 1
+    assert(repair_record.r_version == 1);  // version 1
     REQUIRE(repair_record.is_good_repair == 1); // good repair
 }
 
@@ -376,7 +376,7 @@ TEST_CASE( "test non-successful repair", "[file_repair]" ) {
     // file_repair(mesh, results, repair_record, repaired_path);
     repair_record = file_repair_then_check(mesh, results, repaired_path);
 
-    assert(repair_record.version == 1);  // version 1
+    assert(repair_record.r_version == 1);  // version 1
     REQUIRE(repair_record.is_good_repair == 0); // bad repair
 }
 
@@ -388,7 +388,7 @@ TEST_CASE( "test repair hole with 4 edges", "[file_repair]" ) {
 
     results = file_check(mesh);
     repair_record = file_repair_then_check(mesh, results, repaired_path);
-    assert(repair_record.version == 1);  // version 1
+    assert(repair_record.r_version == 1);  // version 1
     REQUIRE(repair_record.n_hole_filled == 1); // good repair
 }
 
@@ -401,7 +401,7 @@ TEST_CASE( "test repair hole with more than 1 hole", "[file_repair]" ) {
     results = file_check(mesh);
     repair_record = file_repair_then_check(mesh, results, repaired_path);
 
-    assert(repair_record.version == 1);  // version 1
+    assert(repair_record.r_version == 1);  // version 1
     REQUIRE(repair_record.n_hole_filled == 2); // good repair
 }
 
@@ -414,7 +414,7 @@ TEST_CASE( "test not repair large hole", "[file_repair]" ) {
     results = file_check(mesh);
     repair_record = file_repair_then_check(mesh, results, repaired_path);
 
-    assert(repair_record.version == 1);  // version 1
+    assert(repair_record.r_version == 1);  // version 1
     REQUIRE(repair_record.n_hole_filled == 0); // good repair
 }
 
