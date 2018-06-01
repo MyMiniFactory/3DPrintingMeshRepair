@@ -10,11 +10,12 @@ self.addEventListener('message', function(e) {
 
 self.importScripts("filecheck.js");
 
-let last_file_name = undefined;
+let last_file_name;
 
 function check_repair(blob) {
 
     var filename = blob.name;
+    const repair_filename = "repair.stl";
 
     if (last_file_name !== undefined) {
         console.log("unlinking file");
@@ -28,20 +29,30 @@ function check_repair(blob) {
     fr.onload = function (){
         var data = new Uint8Array(fr.result); // base64 to Uint8 for emscripten
 
-        Module['FS_createDataFile'](".", filename, data, true, true);
+        Module.FS_createDataFile(".", filename, data, true, true);
 
         console.time("js_c_r");
         Module.ccall("js_check_repair", // c function name
                 undefined, // return
-                ["string"], // param
-                [filename]
+                ["string", "string"], // param
+                [filename, repair_filename]
         );
         console.timeEnd("js_c_r");
 
         const report_str = Module.FS_readFile("report.txt", {encoding:'utf8'});
-        const ply_binary = Module.FS_readFile("repaired.ply");
-        const blob = new Blob([ply_binary], {type: 'application/sla'});
 
-        self.postMessage({"report": report_str, "blob": blob, "name": filename});
-    } // fr.onload
+        const report_json = JSON.parse(report_str);
+
+        let repair_blob;
+
+        if (report_json.is_good_repair) {
+            const ply_binary = Module.FS_readFile("repair.stl");
+            repair_blob = new Blob([ply_binary], {type: 'application/sla'});
+        }
+
+        if (repair_blob !== undefined)
+            self.postMessage({"report": report_str, "blob": repair_blob, "name": filename});
+        else
+            self.postMessage({"report": report_str, "name": filename});
+    }; // fr.onload
 }

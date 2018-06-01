@@ -251,9 +251,12 @@ bool exportMesh(MyMesh & mesh, const std::string exportPath) {
         vcg::tri::io::ExporterPLY<MyMesh>::Save(mesh, exportPath.c_str());
     else if (extension == "stl")
         vcg::tri::io::ExporterSTL<MyMesh>::Save(mesh, exportPath.c_str());
-    else
+    else {
         throw std::runtime_error("Not Supported Export Type " + extension);
+        return false;
+    }
 
+    return true;
 }
 
 bool reloadMesh(MyMesh& mesh) {
@@ -263,6 +266,7 @@ bool reloadMesh(MyMesh& mesh) {
     vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh); // require for isWaterTight
 
     std::remove(random_ply.c_str());
+    return true;
 }
 
 checkResult_t file_check(MyMesh & m) {
@@ -475,9 +479,10 @@ int check_repair_main(
 }
 
 extern "C" {
-    int js_check_repair(const char* filepath) {
+    int js_check_repair(const char* filepath, const char* repaired_path) {
         std::string _filepath(filepath);
-        return check_repair_main(_filepath, "repaired.ply", "report.txt");
+        std::string _repaired_path(repaired_path);
+        return check_repair_main(_filepath, _repaired_path, "report.txt");
     }
 }
 

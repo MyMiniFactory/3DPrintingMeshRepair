@@ -17,13 +17,13 @@
     // for (let i=0;i<Math.max(1, navigator.hardwareConcurrency-2);i++) {
     const worker = new Worker('worker.js');
     worker.onmessage = function(e) {
-        console.log("index html on message");
+        console.log("index html on message", e);
         const report = e.data.report;
         const blob = e.data.blob;
         const name = e.data.name;
-        if (report !== undefined && blob !== undefined) {
+        if (report !== undefined) {
             GLOBAL.report = {}; // empty useful for uploading one after the other
-            parse_report(report, GLOBAL.report);
+            GLOBAL.report = parse_report(report);
             read_report(GLOBAL.report, name, blob);
         }
     }
@@ -35,29 +35,8 @@
         worker.postMessage({blob});
     }
 
-    function parse_report(report_str, dict) {
-        let res = report_str;
-        res = res.split("\n");
-        for (let i=0;i<res.length;i++) {
-            let x = res[i];
-
-            x = x.split(" ");
-
-            if (x.length < 2) continue;
-
-            let key = x[1];
-            let value = x[0];
-
-            if (value.includes(".")) { // HACK
-                value = parseFloat(value);
-            } else {
-                value = parseInt(value);
-            }
-
-            if (key in dict) key = GLOBAL.prefix + key;
-
-            dict[key] = value;
-        }
+    function parse_report(report_str) {
+        return JSON.parse(report_str);
     }
 
     function read_report(d, name, blob) {
@@ -137,16 +116,18 @@
 
             HTML = row.querySelector(".action");
 
-            const url = window.URL.createObjectURL(blob);
-            console.log(url);
-            var a = document.createElement("a");
-            a.style = "display: none";
-            a.href = url;
-            a.download = "test.ply";
-            a.id = Math.random();
-            HTML.appendChild(a);
+            if (blob !== undefined) {
+                const url = window.URL.createObjectURL(blob);
+                console.log(url);
+                var a = document.createElement("a");
+                a.style = "display: none";
+                a.href = url;
+                a.download = "repair.stl"; // TODO: use global variable for name
+                a.id = Math.random();
+                HTML.appendChild(a);
 
-            HTML.innerHTML += `<button onclick="document.getElementById(${a.id}).click()">Download Repaired Version</a>`;
+                HTML.innerHTML += `<button onclick="document.getElementById(${a.id}).click()">Download Repaired Version</a>`;
+            }
 
         } else if (d["is_good_mesh"]){
             HTML = row.querySelector(".ri");
