@@ -1,0 +1,23 @@
+FROM alpine:3.12.3 as build
+
+RUN apk add build-base
+
+RUN mkdir -p /filecheck
+WORKDIR /filecheck
+
+COPY ./ /filecheck
+
+RUN make build
+
+
+
+FROM node:current-alpine3.12
+
+# install c++ runtime
+RUN apk add libstdc++ 
+
+RUN addgroup -S filecheck && adduser -S filecheck -G filecheck -H
+
+COPY --from=build --chown=filecheck:filecheck /filecheck/out/filecheck /filecheck
+
+USER node
